@@ -23,6 +23,16 @@
 - daily_eval_reporter.py: cron 9:00 Asia/Shanghai
 - 最终验证: 27/27 ALL GREEN (28.2s)
 
+### V2.11 增补 (2026-06-23 20:20-20:44)
+- github-actions-generator v0.2.0 ✅ 5个模板(ci-node/python/go/deploy-pages/schedule) 真实YAML生成
+- web-deploy-github v0.2.0 ✅ deploy/status/list/build + gh CLI集成
+- git_safe_push.py ✅ 过滤PowerShell stderr误判
+- git.cmd wrapper ✅ PATH拦截器 + pathPrepend配置
+- report_delivery.py ✅ WeCom/SMTP双通道
+- INSTALL.md + setup_new_env.py ✅ 一键部署验证通过
+- eval-suite/run_all.py ✅ 主测试入口
+- 全量审计: extraDirs 148 live, 0 stub, 1 bare (qclaw-shared)
+
 ### 基础设施
 - ruff 0.15.18: pre-commit hook 已部署 (Python版)
 - self-heal 0.5.0: @repair 装饰器已集成
