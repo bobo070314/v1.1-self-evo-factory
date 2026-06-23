@@ -14,7 +14,6 @@ Run: `$env:PYTHONIOENCODING="utf-8"; cd D:\bobo\openclaw-foreign\workspace\v1.1-
 
 ### 📦 Git status
 Run: `git -C D:\bobo\openclaw-foreign\workspace status --short`
-Run: `git -C D:\bobo\openclaw-foreign\skills status --short`
 - Uncommitted work? -> note it
 
 ### 🧪 API skills
