@@ -835,6 +835,15 @@ def main():
         # V5.2: Balance monitor — dampen weights AFTER evolution step
         balance_monitor(state)
 
+        # V5.2: GitHub Predator — autotrophic feeding (once per day)
+        try:
+            from core.github_predator import GitHubPredator
+
+            predator = GitHubPredator()
+            predator.run(daily=True)
+        except Exception as e:
+            print(f"[EVO] Predator feed failed (non-fatal): {e}")
+
         # V4.5: Multi-Agent
         orchestrate_agents(state)
 
