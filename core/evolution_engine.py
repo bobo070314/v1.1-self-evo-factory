@@ -30,6 +30,7 @@ AGENTS = {
     "sec": SKILLS / "security-audit" / "run.py",
     "ops": SKILLS / "deployment-automation" / "run.py",
     "analyst": SKILLS / "causal-reasoner" / "run.py",
+    "web-dev": BASE / "workspace" / "core" / "web_developer_agent.py",
 }
 
 
@@ -322,6 +323,10 @@ def orchestrate_agents(state):
             task_agent("ops", f"--repair {alert['detail']}", alert)
         elif agent_type == "analyst":
             task_agent("analyst", f"--trace {alert['detail']}", alert)
+        elif agent_type == "web-dev":
+            task_agent("web-dev", f"audit {alert['detail']}", alert)
+            # Also capture responsive screenshots
+            task_agent("web-dev", f"responsive {alert['detail']}", alert)
 
         log_cycle(state, {"action": "orchestrate", "alert": alert, "agent": agent_type})
 

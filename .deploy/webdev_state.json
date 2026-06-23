@@ -1,0 +1,52 @@
+{
+  "screenshots": [
+    {
+      "target": "D:\\bobo\\openclaw-foreign\\workspace\\.deploy\\test_site.html",
+      "path": ".deploy\\screenshots\\94264be721_20260623_165108.png",
+      "size": 120040,
+      "time": "2026-06-23T16:51:09Z"
+    }
+  ],
+  "audits": [
+    {
+      "target": "D:\\bobo\\openclaw-foreign\\workspace\\.deploy\\test_site.html",
+      "result": {
+        "body_bg": "rgb(245, 245, 245)",
+        "body_color": "rgb(51, 51, 51)",
+        "font_family": "\"Segoe UI\", system-ui, sans-serif",
+        "font_size": "16px",
+        "css_variables": [
+          "--bg",
+          "--text",
+          "--accent",
+          "--card-bg",
+          "--bg",
+          "--text",
+          "--accent",
+          "--accent",
+          "--card-bg",
+          "--text",
+          "--accent",
+          "--card-bg",
+          "--accent",
+          "--text",
+          "--accent",
+          "--bg",
+          "--text",
+          "--card-bg"
+        ],
+        "media_queries": [
+          "@media (prefers-color-scheme: light)",
+          "@media (max-width: 768px)"
+        ],
+        "total_elements": 32,
+        "images": 0,
+        "has_dark_mode": true,
+        "viewport_meta": "width=device-width, initial-scale=1.0",
+        "errors": []
+      },
+      "time": "2026-06-23T16:51:17Z"
+    }
+  ],
+  "last_run": null
+}

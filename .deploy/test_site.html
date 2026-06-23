@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="猫抓 WebDev Agent 测试页面">
+    <title>🦞 猫抓建站测试</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --text: #e0e0e0;
+            --accent: #ff6b35;
+            --card-bg: #1a1a2e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+        }
+        header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 3rem 2rem;
+            text-align: center;
+            border-bottom: 2px solid var(--accent);
+        }
+        h1 { font-size: 2.5rem; color: var(--accent); }
+        nav {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            padding: 1rem;
+            background: var(--card-bg);
+        }
+        nav a { color: var(--text); text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+        nav a:hover { background: var(--accent); color: #000; }
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #333;
+        }
+        .card h3 { color: var(--accent); margin-bottom: 1rem; }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        input, textarea, button {
+            padding: 0.75rem;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: var(--text);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover { opacity: 0.9; }
+        @media (prefers-color-scheme: light) {
+            :root { --bg: #f5f5f5; --text: #333; --card-bg: #fff; }
+        }
+        @media (max-width: 768px) {
+            main { grid-template-columns: 1fr; padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🦞 猫抓建站测试</h1>
+        <p>Web Developer Agent · Playwright 验证</p>
+    </header>
+    <nav>
+        <a href="#home">首页</a>
+        <a href="#projects">项目</a>
+        <a href="#about">关于</a>
+        <a href="#contact">联系</a>
+    </nav>
+    <main>
+        <div class="card">
+            <h3>屏幕截图测试</h3>
+            <p>猫应该能拍下这张卡片的照片。</p>
+        </div>
+        <div class="card">
+            <h3>样式审计测试</h3>
+            <p>猫应该能检测到 CSS 变量和暗黑模式。</p>
+        </div>
+        <div class="card">
+            <h3>响应式测试</h3>
+            <p>缩小浏览器，布局应该从网格变成单列。</p>
+        </div>
+    </main>
+    <form id="contact-form">
+        <input type="text" name="name" placeholder="你的名字" required>
+        <input type="email" name="email" placeholder="你的邮箱" required>
+        <textarea name="message" rows="4" placeholder="你的消息"></textarea>
+        <button type="submit">发送消息</button>
+    </form>
+    <footer>&copy; 2026 猫抓建站系统 · Powered by Playwright</footer>
+</body>
+</html>
