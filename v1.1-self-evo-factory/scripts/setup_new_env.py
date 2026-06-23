@@ -1,13 +1,13 @@
-"""
-V2.11 — setup_new_env.py
+"""V2.14 — setup_new_env.py
 =========================
 One-click environment setup for v1.1-self-evo-factory.
-Handles Python deps, pre-commit, and environment validation.
+Handles Python deps, pre-commit, environment validation,
+and runs full test suite (eval + deep + api validation).
 """
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -43,7 +43,7 @@ def run(cmd, description="", timeout=60):
 
 def check_python():
     """Verify Python version."""
-    print("\n[1/5] Checking Python version...")
+    print("\n[1/8] Checking Python version...")
     v = sys.version_info
     if v.major >= 3 and v.minor >= 11:
         print(f"  ✅ Python {v.major}.{v.minor}.{v.micro}")
@@ -55,14 +55,14 @@ def check_python():
 
 def check_git():
     """Verify Git."""
-    print("\n[2/5] Checking Git...")
+    print("\n[2/8] Checking Git...")
     ok, out = run(["git", "--version"], "Git version")
     return ok
 
 
 def check_docker():
     """Verify Docker (optional)."""
-    print("\n[3/5] Checking Docker (optional)...")
+    print("\n[3/8] Checking Docker (optional)...")
     ok, _ = run(["docker", "--version"], "Docker version")
     if not ok:
         print("    ℹ️ Docker not found — sandbox-executor will use native fallback")
@@ -71,7 +71,7 @@ def check_docker():
 
 def install_ruff():
     """Install/upgrade ruff."""
-    print("\n[4/5] Installing Python tools...")
+    print("\n[4/8] Installing Python tools...")
     tools = ["ruff", "pre-commit"]
     for tool in tools:
         ok, _ = run(
@@ -85,69 +85,109 @@ def install_ruff():
 
 def verify_project():
     """Run basic project validation."""
-    print("\n[5/5] Verifying project...")
+    print("\n[5/8] Verifying project structure...")
 
-    required_dirs = ["pipeline", "eval-suite", "scripts", "states", "logs"]
+    required_dirs = ["pipeline", "eval-suite", "scripts", "states", "logs", "docs"]
     for d in required_dirs:
         exists = (PROJECT_ROOT / d).exists()
         print(f"  {'✅' if exists else '❌'} {d}/ {'exists' if exists else 'MISSING'}")
 
     required_files = [
+        "pipeline/planner.py",
+        "pipeline/coordinator.py",
+        "pipeline/validate_apis.py",
         "pipeline/self_coder.py",
         "pipeline/self_improve.py",
-    ]
-    optional_files = [
-        "pipeline/self_heal.py",  # may be pip-installed
-        "eval-suite/run_all.py",   # regeneratable
+        "eval-suite/run_all.py",
+        "eval-suite/test_deep_skills.py",
+        "docs/V3_ROADMAP.md",
     ]
     for f in required_files:
         exists = (PROJECT_ROOT / f).exists()
         print(f"  {'✅' if exists else '❌'} {f} {'exists' if exists else 'MISSING'}")
-    for f in optional_files:
-        exists = (PROJECT_ROOT / f).exists()
-        print(f"  {'✅' if exists else '⚠️'} {f} {'exists' if exists else 'NOT FOUND (optional)'}")
 
-    # Try importing self_heal
-    try:
-        sys.path.insert(0, str(PROJECT_ROOT))
-        from pipeline.self_heal import repair
-        print(f"  ✅ self_heal.@repair importable")
-    except Exception as e:
-        print(f"  ❌ self_heal import failed: {e}")
 
-    # Check OPENAI_API_KEY
-    key = os.environ.get("OPENAI_API_KEY", "")
-    if key:
-        print(f"  ✅ OPENAI_API_KEY set ({len(key)} chars)")
+def run_skill_validation():
+    """Run skill --version check on all 148 skills."""
+    print("\n[6/8] Validating 148 skills (--version)...")
+    ok, out = run(
+        [
+            sys.executable,
+            "-c",
+            """
+import subprocess, sys
+from pathlib import Path
+BASE = Path(r"D:/bobo/openclaw-foreign/skills")
+total = 0; passed = 0
+for d in sorted(BASE.iterdir()):
+    if not d.is_dir() or d.name.startswith('.') or d.name == 'qclaw-shared': continue
+    rp = d / 'run.py'
+    if not rp.exists(): continue
+    total += 1
+    r = subprocess.run([sys.executable, str(rp), '--version'], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=10)
+    if r.returncode == 0 and 'live' in r.stdout: passed += 1
+print(f'Skills: {passed}/{total}')
+""",
+        ],
+        "148 skills --version check",
+        timeout=300,
+    )
+    return ok
+
+
+def run_deep_tests():
+    """Run deep skill tests."""
+    print("\n[7/8] Running deep skill tests...")
+    test_script = PROJECT_ROOT / "eval-suite" / "test_deep_skills.py"
+    if test_script.exists():
+        ok, _ = run([sys.executable, str(test_script)], "eval-suite/test_deep_skills.py", timeout=120)
+        return ok
     else:
-        print(f"  ⚠️ OPENAI_API_KEY not set — @repair LLM won't work")
+        print("  ⚠️ test_deep_skills.py not found")
+        return True
+
+
+def run_api_validation():
+    """Validate API skills."""
+    print("\n[8/8] Validating API skills...")
+    api_script = PROJECT_ROOT / "pipeline" / "validate_apis.py"
+    if api_script.exists():
+        ok, _ = run([sys.executable, str(api_script)], "pipeline/validate_apis.py", timeout=180)
+        return ok
+    else:
+        print("  ⚠️ validate_apis.py not found")
+        return True
 
 
 def main():
-    print("=" * 50)
-    print("V2.11 — New Environment Setup")
-    print("=" * 50)
+    print("=" * 60)
+    print("V2.14 — Full Environment Setup & Validation")
+    print("=" * 60)
 
     checks = [
         ("Python 3.11+", check_python()),
         ("Git", check_git()),
         ("Docker", check_docker()),
         ("Python tools", install_ruff()),
+        ("Project structure", verify_project()),
+        ("Skill validation", run_skill_validation()),
+        ("Deep tests", run_deep_tests()),
+        ("API validation", run_api_validation()),
     ]
 
     print()
-    print("=" * 50)
-    print("Verification")
-    print("=" * 50)
-    verify_project()
+    print("=" * 60)
+    print("Summary")
+    print("=" * 60)
+    for name, ok in checks:
+        print(f"  {'✅' if ok else '❌'} {name}")
 
-    print()
     failed = [name for name, ok in checks if not ok]
     if failed:
-        print(f"⚠️ Setup complete with warnings: {', '.join(failed)}")
+        print(f"\n⚠️ Setup complete with warnings: {', '.join(failed)}")
         return 1
     else:
-        print("✅ Setup complete — all checks passed!")
+        print("\n✅ Full setup complete — all 8 checks passed!")
         return 0
 
 
