@@ -5,6 +5,12 @@
       "path": ".deploy\\screenshots\\94264be721_20260623_165108.png",
       "size": 120040,
       "time": "2026-06-23T16:51:09Z"
+    },
+    {
+      "target": "D:\\bobo\\openclaw-foreign\\workspace\\web\\index.html",
+      "path": ".deploy\\screenshots\\5146f52052_20260623_165729.png",
+      "size": 31452,
+      "time": "2026-06-23T16:57:29Z"
     }
   ],
   "audits": [
@@ -46,6 +52,33 @@
         "errors": []
       },
       "time": "2026-06-23T16:51:17Z"
+    },
+    {
+      "target": "D:\\bobo\\openclaw-foreign\\workspace\\web\\index.html",
+      "result": {
+        "body_bg": "rgb(13, 17, 23)",
+        "body_color": "rgb(201, 209, 217)",
+        "font_family": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif",
+        "font_size": "16px",
+        "css_variables": [
+          "--bg",
+          "--fg",
+          "--accent",
+          "--green",
+          "--bg",
+          "--fg",
+          "--accent",
+          "--green",
+          "--green"
+        ],
+        "media_queries": [],
+        "total_elements": 16,
+        "images": 0,
+        "has_dark_mode": false,
+        "viewport_meta": "width=device-width, initial-scale=1.0",
+        "errors": []
+      },
+      "time": "2026-06-23T16:57:37Z"
     }
   ],
   "last_run": null
