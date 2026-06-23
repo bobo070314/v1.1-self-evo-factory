@@ -1,0 +1,10 @@
+{
+  "last_sync": "2026-06-23T15:44:00.863848+00:00",
+  "source_region": "eu-central-1",
+  "synced_regions": [
+    "us-east-1",
+    "ap-southeast-1"
+  ],
+  "failed_regions": [],
+  "rpo_seconds": 0.5
+}

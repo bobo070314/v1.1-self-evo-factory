@@ -1,0 +1,41 @@
+[
+  {
+    "timestamp": "2026-06-23T15:42:38.253643+00:00",
+    "region": "eu-central-1",
+    "action": "compliance_report_generated",
+    "tenant_id": "system",
+    "operator": "system",
+    "details": {
+      "standard": "SOC2",
+      "file": "D:\\bobo\\openclaw-foreign\\workspace\\core\\compliance\\soc2_report_20260623_154238.json"
+    },
+    "prev_hash": "genesis",
+    "hash": "1df7b74720764b69c4fc6dc27eb77bce42a939ba86ff5580c281a5bcf8901d45"
+  },
+  {
+    "timestamp": "2026-06-23T15:42:38.423940+00:00",
+    "region": "eu-central-1",
+    "action": "compliance_report_generated",
+    "tenant_id": "system",
+    "operator": "system",
+    "details": {
+      "standard": "ISO27001",
+      "file": "D:\\bobo\\openclaw-foreign\\workspace\\core\\compliance\\iso27001_report_20260623_154238.json"
+    },
+    "prev_hash": "1df7b74720764b69c4fc6dc27eb77bce42a939ba86ff5580c281a5bcf8901d45",
+    "hash": "ae4e3625dfab34718e834c2be744b4df5bc4bbf2408e78565c2cf35330a8ba45"
+  },
+  {
+    "timestamp": "2026-06-23T15:42:38.569703+00:00",
+    "region": "eu-central-1",
+    "action": "gdpr_cleanup",
+    "tenant_id": "system",
+    "operator": "system",
+    "details": {
+      "purged": 0,
+      "retention_days": 365
+    },
+    "prev_hash": "ae4e3625dfab34718e834c2be744b4df5bc4bbf2408e78565c2cf35330a8ba45",
+    "hash": "a8852adef098a68ef525e8472de70aa8d84d32a4f77f39c8d45b12ff3fd92498"
+  }
+]

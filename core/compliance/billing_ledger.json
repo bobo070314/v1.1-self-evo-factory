@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": "2026-06-23T15:43:17.731194+00:00",
+    "tenant_id": "TENANT_ACME_CORP",
+    "region": "eu-central-1",
+    "model": "deepseek-v4-pro",
+    "operation": "chat_completion",
+    "prompt_tokens": 50000,
+    "completion_tokens": 25000,
+    "usd_cost": 0.1,
+    "local_currency": "EUR",
+    "local_pre_tax": 0.092,
+    "VAT_rate": 0.19,
+    "tax_amount": 0.0175,
+    "total_local": 0.1095,
+    "exchange_rate": 0.92
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "invoice_id": "INV-20260623154318-TENANT_A",
+  "tenant_id": "TENANT_ACME_CORP",
+  "period_days": 30,
+  "generated_at": "2026-06-23T15:43:18.001015+00:00",
+  "region": "eu-central-1",
+  "currency": "EUR",
+  "subtotal": 0.1095,
+  "tax_rate": 0.19,
+  "tax_name": "VAT",
+  "total": 0.1095,
+  "items": [
+    {
+      "description": "OpenClaw AI Usage (1 calls, 75000 tokens)",
+      "amount": 0.1095
+    }
+  ]
+}

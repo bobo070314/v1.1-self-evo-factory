@@ -1,0 +1,45 @@
+{
+  "report_type": "ISO 27001",
+  "generated_at": "2026-06-23T15:42:38.411411+00:00",
+  "region": "eu-central-1",
+  "total_events": 1,
+  "chain_verified": "OK",
+  "controls_coverage": {
+    "A.5.1.1 - Policies for information security": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.6.1.1 - Information security roles and responsibilities": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.8.1.1 - Inventory of assets": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.9.1.1 - Access control policy": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.10.1.1 - Policy on the use of cryptographic controls": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.12.1.1 - Documented operating procedures": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.14.1.1 - Information security requirements analysis": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.16.1.1 - Management of information security incidents": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    },
+    "A.18.1.1 - Compliance with legal and contractual requirements": {
+      "status": "INCONCLUSIVE",
+      "evidence_count": 0
+    }
+  }
+}
