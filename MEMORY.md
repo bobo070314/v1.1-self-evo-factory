@@ -54,6 +54,9 @@
 - **QClaw 的 openclaw.cmd 劫持 CLI**，国际版要用 `C:\Users\asus\AppData\Roaming\npm\openclaw`
 - **Gateway 热重启有概率闪退**，优先冷启动：kill 进程 → 等 2s → 重新 `start`
 - **winget 缓存锁在 D:\bobo\Temp**，文件被占用时安装失败，改用 Python 原生替代方案
+- **os.walk 遍历 D 盘 → 必 OOM**，2TB 文件系统不能用 walk，用已知路径列表
+- **Git push exit code 1 是 PowerShell 误判**，git 所有输出走 stderr，PowerShell 把非空 stderr 当错误
+- **process tool session 被 kill 后查不到 log**，直接 `process list` 看状态即可，别反复 poll
 
 ## 偏好
 - 样式用 Tailwind，不用 CSS Module
