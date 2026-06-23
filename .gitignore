@@ -127,8 +127,7 @@ skills/clone-skills-en.ps1
 .ruff_cache/
 .vscode/
 
-# Workspace (track MEMORY.md, keep rest excluded)
-MEMORY.md
+# Workspace (MEMORY.md is tracked in git)
 SOUL.md
 TOOLS.md
 USER.md
