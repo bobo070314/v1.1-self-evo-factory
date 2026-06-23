@@ -1,0 +1,22 @@
+{
+  "skill": "self_coder",
+  "timestamp": "2026-06-23T08:44:10Z",
+  "steps": [],
+  "decision": "PASS",
+  "dry_run": true,
+  "pre_eval": {
+    "all_green": true,
+    "passed": 5,
+    "failed": 0
+  },
+  "analysis": {
+    "exit_code": 2,
+    "file_count": 0
+  },
+  "snapshot": null,
+  "post_eval": {
+    "all_green": true,
+    "passed": 5,
+    "failed": 0
+  }
+}
