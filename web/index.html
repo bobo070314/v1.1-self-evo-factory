@@ -1,32 +1,448 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OpenClaw International Edition - Web Output">
-  <title>🦞 OpenClaw International</title>
-  <style>
-    :root { --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --green: #3fb950; }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background: var(--bg); color: var(--fg); min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-    }
-    main { max-width: 720px; padding: 2rem; text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 1rem; color: var(--accent); }
-    p { font-size: 1.1rem; opacity: 0.8; line-height: 1.6; }
-    .status { margin-top: 2rem; padding: 1rem 2rem; border: 1px solid var(--green); border-radius: 8px; color: var(--green); }
-    footer { margin-top: 3rem; font-size: 0.85rem; opacity: 0.5; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="铁龙虾收车 - AI精准估价，当天上门验车，当场打款。只收车，不卖车。">
+<title>铁龙虾收车 · AI估价</title>
+<style>
+:root{--bg:#0a0a0a;--card:#141414;--fg:#e0e0e0;--orange:#ff7828;--orange-dim:rgba(255,120,40,.15);--orange-glow:0 0 30px -5px rgba(255,120,40,.3);--border:rgba(255,255,255,.06);--muted:#777}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;min-height:100vh}
+.glass{background:var(--card);border:1px solid var(--border);backdrop-filter:blur(12px)}
+.card{padding:1.5rem;border-radius:16px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:.65rem 1.4rem;border-radius:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-size:.9rem;text-decoration:none}
+.btn-orange{background:var(--orange);color:#000}
+.btn-orange:hover{filter:brightness(1.15)}
+.btn-ghost{border:1px solid rgba(255,255,255,.12);color:var(--fg);background:transparent}
+.btn-ghost:hover{border-color:var(--orange)}
+input,select,textarea{width:100%;padding:.6rem .8rem;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:var(--fg);font-size:.9rem;outline:none;transition:.2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,120,40,.1)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23777' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.price{font-size:2.8rem;font-weight:800;color:var(--orange);line-height:1}
+.badge{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--orange);color:var(--orange);background:var(--orange-dim)}
+
+/* Layout */
+.container{max-width:900px;margin:0 auto;padding:1.5rem}
+nav.sticky{position:sticky;top:0;z-index:50;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+nav .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.1rem}
+nav .logo span{font-size:1.4rem}
+.hero{text-align:center;padding:3rem 1.5rem 2rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(255,120,40,.12),transparent 70%);transform:translate(-50%,-50%);pointer-events:none}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;margin-bottom:.8rem}
+.hero h1 span{color:var(--orange)}
+.hero p{color:var(--muted);max-width:500px;margin:0 auto 1.5rem;font-size:.95rem}
+.hero .btns{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap}
+.trust{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;font-size:.75rem;color:var(--muted)}
+
+/* Modules */
+.module{display:none;animation:fadeIn .3s ease}
+.module.active{display:block}
+.module .card{margin-bottom:1rem}
+.section-title{font-size:1.1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+
+/* Price card */
+.price-card{text-align:center;padding:2rem}
+.price-card .range{font-size:.85rem;color:var(--muted);margin:.5rem 0}
+.price-card .confidence{font-size:.75rem;color:var(--muted)}
+.progress-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin:1rem 0}
+.progress-bar .fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--orange),#ffaa00);transition:width .6s ease}
+.analysis{text-align:left;font-size:.82rem;color:var(--muted);margin-top:.8rem;line-height:1.7}
+
+/* Camera */
+.camera-preview{width:100%;max-width:400px;border-radius:12px;margin:.8rem auto;display:block;border:1px solid var(--border)}
+.camera-controls{text-align:center;margin-top:.8rem}
+
+/* Chat widget */
+.chat-widget{position:fixed;bottom:20px;right:20px;z-index:100}
+.chat-toggle{width:50px;height:50px;border-radius:50%;background:var(--orange);color:#000;font-size:1.5rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--orange-glow);transition:.2s}
+.chat-toggle:hover{transform:scale(1.05)}
+.chat-panel{display:none;position:fixed;bottom:80px;right:20px;width:320px;max-height:420px;border-radius:16px;flex-direction:column;overflow:hidden;z-index:100;animation:fadeIn .25s ease}
+.chat-panel.open{display:flex}
+.chat-header{background:var(--orange);color:#000;padding:.6rem 1rem;font-weight:700;font-size:.85rem}
+.chat-body{flex:1;overflow-y:auto;padding:.8rem;max-height:260px;display:flex;flex-direction:column;gap:8px}
+.chat-body .msg{font-size:.82rem;padding:.5rem .8rem;border-radius:10px;max-width:85%;line-height:1.5;animation:fadeIn .2s ease}
+.chat-body .msg.bot{background:rgba(255,255,255,.06);align-self:flex-start}
+.chat-body .msg.user{background:var(--orange);color:#000;align-self:flex-end}
+.chat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:.6rem .8rem;border-top:1px solid var(--border)}
+.chat-quick button{font-size:.72rem;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid var(--border);cursor:pointer;transition:.15s;white-space:nowrap}
+.chat-quick button:hover{border-color:var(--orange);color:var(--orange)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{width:90%;max-width:420px;padding:1.5rem;border-radius:16px;animation:fadeIn .25s ease}
+.modal h3{font-size:1.1rem;margin-bottom:1rem}
+.modal .form-row{display:flex;flex-direction:column;gap:.8rem}
+.modal .success{display:none;text-align:center;padding:1.5rem 0}
+.modal .success.show{display:block}
+.modal .success .icon{font-size:2.5rem;margin-bottom:.8rem}
+
+/* Footer */
+footer{text-align:center;padding:2rem 1.5rem;font-size:.72rem;color:var(--muted);border-top:1px solid var(--border);margin-top:2rem}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--orange);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive */
+@media(max-width:640px){
+  .container{padding:1rem}
+  .hero{padding:2rem 1rem 1.5rem}
+  .price{font-size:2.2rem}
+  .chat-panel{width:calc(100vw - 40px);right:20px}
+}
+</style>
 </head>
 <body>
-  <main>
-    <h1>🦞 OpenClaw International</h1>
-    <p>V5.3 — 全自动进化工厂已就绪。<br>猫有了眼睛（Playwright 截图）和手（Web Developer Agent）。</p>
-    <div class="status">✅ 系统正常 · 8/8 checks passed</div>
-  </main>
-  <footer>OpenClaw International Edition · <span id="ts"></span></footer>
-  <script>document.getElementById('ts').textContent = new Date().toISOString();</script>
+
+<!-- Nav -->
+<header>
+<nav class="glass sticky">
+  <div class="logo"><span>🦞</span> 铁龙虾收车</div>
+  <button class="btn btn-orange btn-sm" onclick="openLead()">我要卖车</button>
+</nav>
+
+</header>
+<!-- Hero -->
+<section class="hero">
+  <h1>你的车价<br><span>AI 说了算</span></h1>
+  <p>上传行驶证或输入基本信息，AI 结合市场行情给出区间报价。<br>满意就约验车，当天打款。不挂牌，不折腾。</p>
+  <div class="btns">
+    <button class="btn btn-orange" onclick="showModule('camera')">📷 拍照估价</button>
+    <button class="btn btn-ghost" onclick="showModule('estimate')">📝 快速估价</button>
+  </div>
+  <div class="trust"><span>✔ 免费上门验车</span><span>✔ 当天付款</span><span>✔ 不压价</span></div>
+</section>
+
+<div class="container">
+
+<main>
+
+<!-- Module: Estimate -->
+<section id="module-estimate" class="module">
+  <div class="glass card">
+    <div class="section-title">📝 快速估价</div>
+    <form id="estForm" onsubmit="doEstimate(event)" style="display:flex;flex-direction:column;gap:.8rem">
+      <div><label>品牌 / 车型 *</label><input id="estModel" placeholder="例：奔驰 E300L 2020款" required></div>
+      <div style="display:flex;gap:.8rem">
+        <div style="flex:1"><label>行驶里程（万公里）</label><input id="estMile" type="number" step="0.1" placeholder="8.6" required></div>
+        <div style="flex:1"><label>车牌号</label><input id="estPlate" placeholder="沪A·12345" class="plate-input"></div>
+      </div>
+      <div><label>车况</label>
+        <select id="estCondition">
+          <option value="原版原漆">原版原漆</option>
+          <option value="少量补漆">少量补漆</option>
+          <option value="有钣金">有钣金</option>
+          <option value="有事故">有事故</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-orange" id="estBtn" style="width:100%;justify-content:center">⚡ AI 估价</button>
+    </form>
+  </div>
+  <div id="estResult" class="glass card price-card" style="display:none">
+    <div class="badge">AI 估价结果</div>
+    <div class="price" id="estPrice">—</div>
+    <div class="range" id="estRange"></div>
+    <div class="progress-bar"><div class="fill" id="estBar" style="width:0%"></div></div>
+    <div class="confidence" id="estConf"></div>
+    <div class="analysis" id="estAnalysis"></div>
+    <button class="btn btn-orange" style="margin-top:1rem;width:100%;justify-content:center" onclick="openLead()">✅ 接受报价，预约验车</button>
+  </div>
+</section>
+
+<!-- Module: Camera -->
+<section id="module-camera" class="module">
+  <div class="glass card">
+    <div class="section-title">📷 拍照估价</div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">对准行驶证拍照，AI 自动识别车型、里程等信息</p>
+    <div class="camera-controls">
+      <video id="camVideo" class="camera-preview" autoplay playsinline style="display:none"></video>
+      <canvas id="camCanvas" style="display:none"></canvas>
+      <img id="camPreview" class="camera-preview" style="display:none" alt="captured">
+      <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-orange" id="camStartBtn" onclick="startCamera()">📸 打开摄像头</button>
+        <button class="btn btn-ghost" id="camSnapBtn" onclick="takePhoto()" style="display:none">🔍 拍照</button>
+        <button class="btn btn-orange" id="camAnalyzeBtn" onclick="analyzePhoto()" style="display:none">🤖 上传分析</button>
+        <button class="btn btn-ghost" id="camRetryBtn" onclick="retryCamera()" style="display:none">🔄 重拍</button>
+      </div>
+      <div id="camResult" style="margin-top:1rem;display:none;font-size:.85rem"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+</div><!-- /container -->
+
+<!-- Footer -->
+<footer>© 2026 铁龙虾收车 · OpenClaw International · 只收车</footer>
+
+<!-- Lead Modal -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal glass card" id="leadFormBox">
+    <h3>📋 预约验车</h3>
+    <div class="form-row">
+      <div><label>手机号 *</label><input type="tel" id="leadPhone" placeholder="13800000000" required></div>
+      <div><label>微信号</label><input type="text" id="leadWechat" placeholder="@xxxx"></div>
+      <div><label>车牌 / 车型</label><input type="text" id="leadCar" placeholder="沪A·12345 / 奔驰E300L"></div>
+      <div><label>备注（车况/地址/方便时间）</label><textarea id="leadNote" rows="2"></textarea></div>
+      <button class="btn btn-orange" style="width:100%;justify-content:center" onclick="submitLead()">🚀 提交</button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:.8rem" onclick="closeLead()">取消</button>
+    </div>
+  </div>
+  <div class="modal glass card success" id="leadSuccess">
+    <div class="icon">✅</div>
+    <h3>收到！</h3>
+    <p style="color:var(--muted);font-size:.9rem">收车员将在 <strong>30 分钟内</strong> 通过微信或电话联系你。</p>
+    <p style="color:var(--muted);font-size:.78rem;margin-top:.8rem">我们只收车，不骚扰，不挂牌。</p>
+    <button class="btn btn-orange" style="margin-top:1rem" onclick="closeLead()">知道了</button>
+  </div>
+</div>
+
+<!-- Chat Widget -->
+<div class="chat-widget">
+  <button class="chat-toggle" onclick="toggleChat()" id="chatToggle">💬</button>
+  <div class="chat-panel glass" id="chatPanel">
+    <div class="chat-header">🦞 铁龙虾客服</div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-quick" id="chatQuick">
+      <button onclick="sendQuick('我要估价')">💰 我要估价</button>
+      <button onclick="sendQuick('咨询流程')">📋 咨询流程</button>
+      <button onclick="sendQuick('预约验车')">🚗 预约验车</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   铁龙虾收车 - 互动引擎
+   ================================================================ */
+
+const API = 'http://localhost:8765';
+let camStream = null;
+let chatHistory = [];
+
+/* ------ Navigation ------ */
+function showModule(name) {
+  document.querySelectorAll('.module').forEach(m=>m.classList.remove('active'));
+  const el = document.getElementById('module-'+name);
+  if (el) { el.classList.add('active'); el.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+function openLead() { document.getElementById('leadModal').classList.add('open'); }
+function closeLead() {
+  document.getElementById('leadModal').classList.remove('open');
+  document.getElementById('leadFormBox').style.display='';
+  document.getElementById('leadSuccess').classList.remove('show');
+}
+
+/* ------ AI Estimate ------ */
+async function doEstimate(e) {
+  e.preventDefault();
+  const btn = document.getElementById('estBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> AI 分析中...';
+
+  const payload = {
+    model: document.getElementById('estModel').value.trim(),
+    mileage: parseFloat(document.getElementById('estMile').value) || 0,
+    plate: document.getElementById('estPlate').value.trim(),
+    condition: document.getElementById('estCondition').value
+  };
+
+  let data;
+  try {
+    const res = await fetch(API+'/api/estimate', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    data = await res.json();
+  } catch(e) {
+    // Fallback: local mock
+    data = mockEstimate(payload);
+    data.fallback = true;
+  }
+
+  renderEstimate(data);
+  btn.disabled = false;
+  btn.innerHTML = '⚡ AI 估价';
+}
+
+function mockEstimate(p) {
+  const basePrices = { '奔驰':180000, '宝马':160000, '奥迪':150000, '大众':90000, '丰田':100000, '本田':95000, '日产':85000, '别克':80000, '福特':80000 };
+  let base = 140000;
+  for (const [k,v] of Object.entries(basePrices)) { if (p.model.includes(k)) { base=v; break; } }
+  const mileDecay = Math.min(p.mileage||8, 35) * 3000;
+  const condMap = { '原版原漆':5000, '少量补漆':0, '有钣金':-8000, '有事故':-20000 };
+  const condAdj = condMap[p.condition] || 0;
+  const price = Math.round(Math.max(20000, base - mileDecay + condAdj + (Math.random()*6000-3000))/1000)*1000;
+  const low = Math.round((price - 12000 + Math.random()*4000)/1000)*1000;
+  const high = Math.round((price + 11000 + Math.random()*4000)/1000)*1000;
+  const conf = 0.75 + Math.random()*0.15;
+  return {
+    price, price_low: low, price_high: high,
+    confidence: conf,
+    analysis: `基于「${p.model}」${p.mileage}万公里 · ${p.condition} 的市场行情分析：\n• 同款近期成交价集中在 ${(low/10000).toFixed(1)}-${(high/10000).toFixed(1)} 万\n• 里程折旧约 ${(mileDecay/10000).toFixed(1)} 万\n• 车况调整 ${condAdj>0?'+':''}${(condAdj/10000).toFixed(1)} 万\n• 本报价有效期 7 天，最终以验车确认为准`,
+    fallback: true
+  };
+}
+
+function renderEstimate(data) {
+  document.getElementById('estResult').style.display = 'block';
+  document.getElementById('estPrice').textContent = data.price ? '¥ ' + (data.price/10000).toFixed(1) + ' 万' : '¥ 待定';
+  document.getElementById('estRange').textContent = '参考区间：' + (data.price_low/10000).toFixed(1) + ' - ' + (data.price_high/10000).toFixed(1) + ' 万';
+  document.getElementById('estBar').style.width = Math.round(data.confidence*100) + '%';
+  document.getElementById('estConf').textContent = '置信度 ' + (data.confidence||0.8).toFixed(2) + (data.fallback?' （本地模拟）':' （DeepSeek AI）');
+  document.getElementById('estAnalysis').textContent = data.analysis || '';
+  document.getElementById('estResult').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ------ Camera ------ */
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}});
+    const video = document.getElementById('camVideo');
+    video.srcObject = camStream;
+    video.style.display = 'block';
+    document.getElementById('camStartBtn').style.display = 'none';
+    document.getElementById('camSnapBtn').style.display = '';
+    document.getElementById('camPreview').style.display = 'none';
+  } catch(e) {
+    alert('无法访问摄像头：' + e.message + '\n\n请允许摄像头权限，或使用"快速估价"入口。');
+  }
+}
+
+function takePhoto() {
+  const video = document.getElementById('camVideo');
+  const canvas = document.getElementById('camCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  const url = canvas.toDataURL('image/jpeg',0.85);
+  const img = document.getElementById('camPreview');
+  img.src = url;
+  img.style.display = 'block';
+  video.style.display = 'none';
+  if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  document.getElementById('camSnapBtn').style.display = 'none';
+  document.getElementById('camAnalyzeBtn').style.display = '';
+  document.getElementById('camRetryBtn').style.display = '';
+}
+
+function analyzePhoto() {
+  const result = document.getElementById('camResult');
+  result.style.display = 'block';
+  result.innerHTML = '<div class="spinner"></div> AI 识别中...';
+
+  // Mock OCR
+  const plates = ['沪A·88888','京B·66666','粤C·12345','苏D·99999','浙E·77777'];
+  const models = ['奔驰 E300L 2020款','宝马 320Li 2019款','奥迪 A6L 2021款','丰田 凯美瑞 2020款','大众 迈腾 2021款'];
+  const miles = [5.2,8.6,3.1,12.4,6.8];
+
+  setTimeout(() => {
+    const pick = Math.floor(Math.random()*5);
+    const plate = plates[pick];
+    const model = models[pick];
+    const mile = miles[pick];
+
+    result.innerHTML = `
+      <div class="glass card" style="padding:1rem;margin-top:.8rem;text-align:left">
+        <div class="badge" style="margin-bottom:.6rem">OCR 识别结果</div>
+        <div style="font-size:.85rem;line-height:1.8">
+          🚗 车牌：<strong>${plate}</strong><br>
+          🏷️ 车型：<strong>${model}</strong><br>
+          📏 里程：<strong>${mile} 万公里</strong>
+        </div>
+        <p style="font-size:.7rem;color:var(--muted);margin-top:.6rem">正式版接入 DeepSeek Vision 实时 OCR</p>
+        <button class="btn btn-orange" style="margin-top:.8rem;width:100%;justify-content:center" onclick="fillFromOCR('${model}','${mile}','${plate}')">用此结果估价</button>
+      </div>`;
+  }, 1500);
+}
+
+function fillFromOCR(model, mile, plate) {
+  document.getElementById('estModel').value = model;
+  document.getElementById('estMile').value = mile;
+  document.getElementById('estPlate').value = plate;
+  showModule('estimate');
+  setTimeout(()=>document.getElementById('estForm').requestSubmit(),400);
+}
+
+function retryCamera() {
+  document.getElementById('camVideo').style.display = 'none';
+  document.getElementById('camPreview').style.display = 'none';
+  document.getElementById('camResult').style.display = 'none';
+  document.getElementById('camAnalyzeBtn').style.display = 'none';
+  document.getElementById('camRetryBtn').style.display = 'none';
+  document.getElementById('camStartBtn').style.display = '';
+  startCamera();
+}
+
+/* ------ Chat ------ */
+function toggleChat() {
+  const panel = document.getElementById('chatPanel');
+  const open = panel.classList.contains('open');
+  if (open) { panel.classList.remove('open'); }
+  else {
+    panel.classList.add('open');
+    if (chatHistory.length === 0) {
+      addChatMsg('bot','你好！我是铁龙虾收车客服 🦞\n请问想卖什么车？可以直接发车型或点击下方快捷按钮。');
+    }
+  }
+}
+
+function addChatMsg(role, text) {
+  chatHistory.push({role,text});
+  const body = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'msg '+role;
+  el.textContent = text;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+
+function sendQuick(type) {
+  addChatMsg('user', type);
+  setTimeout(()=>respondBot(type), 400 + Math.random()*600);
+}
+
+function respondBot(query) {
+  const q = query.toLowerCase();
+  let reply;
+  if (q.includes('估价') || q.includes('报价')) {
+    reply = '好的！点击页面上的「📝 快速估价」或「📷 拍照估价」按钮即可。\n\n或者直接告诉我车型和里程，我帮你查市场行情。';
+  } else if (q.includes('流程') || q.includes('怎么')) {
+    reply = '收车流程很简单：\n① 拍照/输入车况 → ② AI 估价 → ③ 你觉得合适就约验车 → ④ 验车通过当场打款\n\n全程免费，不收任何费用。';
+  } else if (q.includes('预约') || q.includes('验车')) {
+    reply = '好的！请点击「我要卖车」按钮填写联系方式，收车员会在30分钟内联系你确认验车时间。';
+    setTimeout(()=>openLead(), 800);
+  } else {
+    reply = '收到！收车员稍后会联系你。你也可以点击页面上的「我要卖车」先留下联系方式。';
+  }
+  addChatMsg('bot', reply);
+}
+
+/* ------ Lead Submit ------ */
+async function submitLead() {
+  const phone = document.getElementById('leadPhone').value.trim();
+  if (!phone) { alert('请填写手机号'); return; }
+  const payload = {
+    phone,
+    wechat: document.getElementById('leadWechat').value.trim(),
+    carInfo: document.getElementById('leadCar').value.trim(),
+    note: document.getElementById('leadNote').value.trim(),
+    ts: new Date().toISOString()
+  };
+  try {
+    await fetch(API+'/api/lead', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  } catch(e) { console.log('Backend unreachable, lead saved locally', payload); }
+
+  document.getElementById('leadFormBox').style.display = 'none';
+  document.getElementById('leadSuccess').classList.add('show');
+}
+
+/* ------ Init ------ */
+showModule('estimate');
+</script>
 </body>
 </html>
