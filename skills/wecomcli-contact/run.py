@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wecomcli-contact — WeCom contact queries — users, departments, tags"""
+"""wecomcli-contact — WeCom contact queries — users, departments, tags."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'wecomcli-contact' executed successfully.")
+        print("Skill 'wecomcli-contact' executed successfully.")
     return 0
 
 

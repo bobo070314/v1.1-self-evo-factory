@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""design-system — Design system tokens and component specs"""
+"""design-system — Design system tokens and component specs."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'design-system' executed successfully.")
+        print("Skill 'design-system' executed successfully.")
     return 0
 
 

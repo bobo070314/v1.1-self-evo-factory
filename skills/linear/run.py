@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""linear — Linear project management — issues, cycles, projects"""
+"""linear — Linear project management — issues, cycles, projects."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'linear' executed successfully.")
+        print("Skill 'linear' executed successfully.")
     return 0
 
 

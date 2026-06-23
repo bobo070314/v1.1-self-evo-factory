@@ -128,7 +128,7 @@ def main():
             print("  Use --config to specify the path.")
         sys.exit(1)
 
-    config_dir = os.path.dirname(os.path.abspath(config_path))
+    os.path.dirname(os.path.abspath(config_path))
 
     if args.status:
         output["results"]["status"] = run_drizzle_command(config_path, ["check"], dry_run=args.dry_run)

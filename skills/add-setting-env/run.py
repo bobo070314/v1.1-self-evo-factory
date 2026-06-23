@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""add-setting-env — Environment Variable Validator
+"""add-setting-env — Environment Variable Validator.
 =================================================
 Compares .env.example with .env to find:
   - Missing variables (in .env.example but not in .env)

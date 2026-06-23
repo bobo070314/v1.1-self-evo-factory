@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wecomcli-meeting — WeCom meeting management — schedule and list meetings"""
+"""wecomcli-meeting — WeCom meeting management — schedule and list meetings."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'wecomcli-meeting' executed successfully.")
+        print("Skill 'wecomcli-meeting' executed successfully.")
     return 0
 
 

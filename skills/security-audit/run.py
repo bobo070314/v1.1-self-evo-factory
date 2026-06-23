@@ -185,8 +185,6 @@ def scan_file(filepath: str) -> dict:
 
 def scan_directory(directory: str, min_severity: str = "warning") -> dict:
     """Scan all files in a directory for security vulnerabilities."""
-    severity_order = {"info": 0, "warning": 1, "error": 2}
-
     all_file_results = []
     root = Path(directory)
 

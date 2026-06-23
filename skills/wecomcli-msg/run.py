@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wecomcli-msg — WeCom message sending — text, markdown, media messages"""
+"""wecomcli-msg — WeCom message sending — text, markdown, media messages."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'wecomcli-msg' executed successfully.")
+        print("Skill 'wecomcli-msg' executed successfully.")
     return 0
 
 

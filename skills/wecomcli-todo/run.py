@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wecomcli-todo — WeCom todo management — tasks and checklists"""
+"""wecomcli-todo — WeCom todo management — tasks and checklists."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'wecomcli-todo' executed successfully.")
+        print("Skill 'wecomcli-todo' executed successfully.")
     return 0
 
 

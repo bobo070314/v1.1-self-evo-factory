@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""create-skill — Skill Factory
+"""create-skill — Skill Factory.
 =============================
 Creates a new skill directory from a template, generating:
   - SKILL.md

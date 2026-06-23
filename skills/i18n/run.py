@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i18n — Internationalization and localization guide"""
+"""i18n — Internationalization and localization guide."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'i18n' executed successfully.")
+        print("Skill 'i18n' executed successfully.")
     return 0
 
 

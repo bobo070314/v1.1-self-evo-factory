@@ -1,0 +1,258 @@
+{
+  "self_coder": {
+    "add-setting-env": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "agent-testing": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "code-navigator": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "create-pr": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "create-skill": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "db-migrations": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "deployment-automation": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "design-system": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "drizzle": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "frontend-code-review": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "i18n": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "infra-diagram-as-code": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "linear": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "notion": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "react": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "release-notes-generator": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "sandbox-executor": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "security-audit": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "token-saver": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "typescript": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-contact": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-doc": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-meeting": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-msg": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-schedule": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "wecomcli-todo": {
+      "exception": "'list' object has no attribute 'get'"
+    },
+    "zustand": {
+      "exception": "'list' object has no attribute 'get'"
+    }
+  },
+  "ruff": {
+    "add-setting-env": {
+      "exit": 1,
+      "issues": 63,
+      "stderr": ""
+    },
+    "agent-testing": {
+      "exit": 1,
+      "issues": 57,
+      "stderr": ""
+    },
+    "code-navigator": {
+      "exit": 1,
+      "issues": 18,
+      "stderr": ""
+    },
+    "create-pr": {
+      "exit": 1,
+      "issues": 18,
+      "stderr": ""
+    },
+    "create-skill": {
+      "exit": 1,
+      "issues": 63,
+      "stderr": ""
+    },
+    "db-migrations": {
+      "exit": 1,
+      "issues": 70,
+      "stderr": ""
+    },
+    "deployment-automation": {
+      "exit": 1,
+      "issues": 18,
+      "stderr": ""
+    },
+    "design-system": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "drizzle": {
+      "exit": 1,
+      "issues": 28,
+      "stderr": ""
+    },
+    "frontend-code-review": {
+      "exit": 1,
+      "issues": 9,
+      "stderr": ""
+    },
+    "i18n": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "infra-diagram-as-code": {
+      "exit": 1,
+      "issues": 17,
+      "stderr": ""
+    },
+    "linear": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "notion": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "react": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "release-notes-generator": {
+      "exit": 1,
+      "issues": 17,
+      "stderr": ""
+    },
+    "sandbox-executor": {
+      "exit": 1,
+      "issues": 81,
+      "stderr": ""
+    },
+    "security-audit": {
+      "exit": 1,
+      "issues": 49,
+      "stderr": ""
+    },
+    "token-saver": {
+      "exit": 1,
+      "issues": 57,
+      "stderr": ""
+    },
+    "typescript": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-contact": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-doc": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-meeting": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-msg": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-schedule": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "wecomcli-todo": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    },
+    "zustand": {
+      "exit": 1,
+      "issues": 29,
+      "stderr": ""
+    }
+  },
+  "live_skills": [
+    "add-setting-env",
+    "agent-testing",
+    "code-navigator",
+    "create-pr",
+    "create-skill",
+    "db-migrations",
+    "deployment-automation",
+    "design-system",
+    "drizzle",
+    "frontend-code-review",
+    "i18n",
+    "infra-diagram-as-code",
+    "linear",
+    "notion",
+    "react",
+    "release-notes-generator",
+    "sandbox-executor",
+    "security-audit",
+    "token-saver",
+    "typescript",
+    "wecomcli-contact",
+    "wecomcli-doc",
+    "wecomcli-meeting",
+    "wecomcli-msg",
+    "wecomcli-schedule",
+    "wecomcli-todo",
+    "zustand"
+  ],
+  "timestamp": "2026-06-23T12:08:12.719510+00:00",
+  "summary": {
+    "total_skills": 27,
+    "sc_issues": 0,
+    "ruff_issues": 942,
+    "ruff_clean": 0
+  }
+}

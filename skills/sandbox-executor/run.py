@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""sandbox-executor — Docker-Isolated Command Runner
+"""sandbox-executor — Docker-Isolated Command Runner.
 ==================================================
 Runs commands in a read-only Docker container with security constraints.
 Falls back to native execution if Docker is unavailable.

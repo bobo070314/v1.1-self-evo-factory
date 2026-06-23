@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zustand — Zustand state management patterns"""
+"""zustand — Zustand state management patterns."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'zustand' executed successfully.")
+        print("Skill 'zustand' executed successfully.")
     return 0
 
 

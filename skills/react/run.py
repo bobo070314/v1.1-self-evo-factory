@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""react — React component patterns and best practices"""
+"""react — React component patterns and best practices."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'react' executed successfully.")
+        print("Skill 'react' executed successfully.")
     return 0
 
 

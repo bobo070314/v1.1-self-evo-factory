@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wecomcli-doc — WeCom document operations — create/edit wiki docs"""
+"""wecomcli-doc — WeCom document operations — create/edit wiki docs."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'wecomcli-doc' executed successfully.")
+        print("Skill 'wecomcli-doc' executed successfully.")
     return 0
 
 

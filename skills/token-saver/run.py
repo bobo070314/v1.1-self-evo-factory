@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""token-saver — Command Output Compressor
+"""token-saver — Command Output Compressor.
 ========================================
 Compresses verbose command output to save tokens in AI context.
 Pass-through exit codes. Typical compression: 82% (200 lines -> 36 lines).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""typescript — TypeScript coding standards and patterns"""
+"""typescript — TypeScript coding standards and patterns."""
 
 import argparse
 import json
@@ -20,7 +20,7 @@ def run(args):
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"Skill 'typescript' executed successfully.")
+        print("Skill 'typescript' executed successfully.")
     return 0
 
 

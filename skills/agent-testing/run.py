@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agent-testing — Multi-Framework Test Runner
+"""agent-testing — Multi-Framework Test Runner.
 ============================================
 Auto-detects the test framework and runs the appropriate test command.
 Supported frameworks: pytest, vitest, jest, cargo test, go test.
