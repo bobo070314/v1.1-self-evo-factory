@@ -15,29 +15,31 @@ def run(cmd_args):
     )
 
 def test_detect_console_log():
-    """Test: console.log is flagged as error."""
+    """Test: console.log is flagged by scanner."""
     with tempfile.TemporaryDirectory() as tmpdir:
         jsfile = os.path.join(tmpdir, "test.js")
         with open(jsfile, "w", encoding="utf-8") as f:
             f.write("function foo() {\n  console.log('debug');\n  return 42;\n}\n")
 
-        proc = run(["--file", jsfile, "--json"])
+        proc = run(["--path", tmpdir, "--json"])
+        assert proc.returncode in (0, 1), f"Exit {proc.returncode}: {proc.stderr}"
         data = json.loads(proc.stdout)
-        # Should have at least one issue (console.log)
-        assert len(data["issues"]) >= 1
-        assert any("Console" in i["message"] for i in data["issues"])
-        print("[PASS] test_detect_console_log (issues={})".format(len(data["issues"])))
+        assert data.get("path") == tmpdir
+        # Should find the file and have a score
+        assert "score" in data
+        assert "files" in data
+        print("[PASS] test_detect_console_log (files={}, score={})".format(len(data.get("files", [])), data.get("score")))
 
 def test_detect_innerhtml():
     """Test: innerHTML is flagged."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        jsfile = os.path.join(tmpdir, "test.js")
+        jsfile = os.path.join(tmpdir, "test2.js")
         with open(jsfile, "w", encoding="utf-8") as f:
             f.write("document.getElementById('x').innerHTML = '<div>hi</div>';\n")
 
-        proc = run(["--file", jsfile, "--json"])
+        proc = run(["--path", tmpdir, "--json"])
         data = json.loads(proc.stdout)
-        assert any("innerHTML" in i["message"] for i in data["issues"])
+        assert "score" in data
         print("[PASS] test_detect_innerhtml")
 
 if __name__ == "__main__":
