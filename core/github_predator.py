@@ -26,13 +26,20 @@ HIGH_VALUE_SIGNATURES = [
     r"def\s+rollback\b",
     r"def\s+auto\s*[-_]\s*fix\b",
     r"def\s+anomaly\s*[-_]\s*detect\b",
-    r"def\s+circuit\s*[-_]\s*breaker\b",
+    r"circuit\s*[-_\s]*breaker",  # lowered: matches class/def/var
     r"def\s+balanc\w+\s*[-_]\s*monitor\b",
     r"def\s+resilien\w+\b",
     r"def\s+fault\s*[-_]\s*toler\w+\b",
     r"class\s+\w*Heal\w*\b",
     r"class\s+\w*Guard\w*\b",
-    r"class\s+\w*CircuitBreaker\w*\b",
+    r"class\s+\w*Circuit\w*[Bb]reaker\w*\b",
+    r"def\s+backoff\b",
+    r"def\s+retry\b",
+    r"def\s+fallback\b",
+    r"def\s+recover\w*\b",
+    r"class\s+\w*Retry\w*\b",
+    r"class\s+\w*Resilien\w+\b",
+    r"class\s+\w*Fallback\w*\b",
 ]
 
 # 毒物签名：绝对不能吞的代码模式
@@ -107,12 +114,12 @@ class GitHubPredator:
     def hunt_fresh_meat(self):
         """主狩猎逻辑：从 GitHub 搜新鲜 Python 仓库"""
         today = datetime.now().strftime("%Y-%m-%d")
-        if self.state["last_hunt"] == today:
+        if self.state["last_hunt"] == today and not daily:
             print(f"[Predator] 今天已进食，跳过 ({today})")
             return []
 
         print("[Predator] 出发狩猎新鲜代码...")
-        since = (datetime.now() - timedelta(days=1)).isoformat()
+        since = (datetime.now() - timedelta(days=7)).isoformat()
 
         queries = [
             f"language:Python created:>{since} topic:automation stars:>3",
@@ -120,9 +127,13 @@ class GitHubPredator:
             f"language:Python created:>{since} topic:fault-tolerance stars:>3",
         ]
 
+        import urllib.parse
+
         all_repos = []
         for q in queries:
-            url = f"https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=3"
+            url = (
+                f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=stars&order=desc&per_page=3"
+            )
             try:
                 resp_data = self._api_get(url)
                 all_repos.extend(resp_data.get("items", []))
@@ -146,23 +157,22 @@ class GitHubPredator:
         return results
 
     def _api_get(self, url: str) -> dict:
-        """GitHub API 调用（静默）"""
-        import urllib.request
+        """GitHub API 调用（静默）—— requests 库，代理自适应"""
+        import requests as req
 
-        req = urllib.request.Request(url, headers=self.headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        resp = req.get(url, headers=self.headers, timeout=15, proxies={"http": None, "https": None})
+        return resp.json()
 
     def consume_repo(self, repo: dict) -> list:
         """消化一个仓库：克隆→扫描→提取精华→尝试融合"""
-        repo_url = repo["clone_url"]
+        ssh_url = repo.get("ssh_url") or repo["clone_url"]
         repo_name = repo["full_name"]
         results = []
 
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
                 subprocess.run(
-                    ["git", "clone", "--depth", "1", repo_url, tmpdir],
+                    ["git", "clone", "--depth", "1", ssh_url, tmpdir],
                     capture_output=True,
                     text=True,
                     timeout=30,
