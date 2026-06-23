@@ -169,3 +169,16 @@
 - ✅ V∞ HEALTH: 5/5 PASS
 - ✅ 全技能 146/149 有用 run.py
 - ⏳ 唯一缺口：notion/linear/wecomcli 等需要外部 API 的测试
+
+### V4.0 第二轮闭环 (2026-06-23 22:10-22:18) — Token贯通 + 大脑皮层
+- ✅ GitHub Token: 从 gh auth token 自动提取注入 api_tokens.json
+- ✅ test_api_skills.py --live: 11/11 ALL PASS (真实API认证)
+- ✅ github-actions-generator: live YAML生成验证通过
+- ✅ web-deploy-github: gh CLI 认证验证通过 (HTTP 404 = 已认证)
+- ✅ wecomcli-contact bug修复: WeCom API search限制友好降级 exit 0
+- ✅ causal-reasoner v0.2.0: 8节点Bayesian DAG + 证据加权评分 + 递归根因回溯
+- ✅ evidence-required gate: 无证据时不抑制报警 (deploy证据→抑制, 未知原因→升级)
+- ✅ Daemon因果抑制: arm_response 先调causal-reasoner再决定报警
+- ✅ 闭环: Daemon(监控) → Reasoner(推理) → Guard(防御) 三级联动
+- ✅ Skills仓库: commit 3caa5f3 (causal-reasoner + daemon upgrade)
+- ⏳ 缺口: owl-vision (视觉), Notion/Linear/WeCom API真实验证 (需用户提供Token)
