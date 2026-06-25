@@ -18,18 +18,22 @@ class OpenClawFallback:
 
     def __init__(self):
         self._llm = None
-        self._health = None
+        self._health_fn = None
 
-    @property
-    def llm(self):
+    def _ensure_import(self):
         if self._llm is None:
             from core.local_llm import chat, health
             self._llm = chat
-            self._health = health
+            self._health_fn = health
+
+    @property
+    def llm(self):
+        self._ensure_import()
         return self._llm
 
     def health(self) -> dict:
-        return self._health() if self._health else {"status": "uninitialized"}
+        self._ensure_import()
+        return self._health_fn() if self._health_fn else {"status": "uninitialized"}
 
     def query(self, prompt: str) -> Tuple[str, str]:
         """统一查询入口，返回 (响应, 来源)"""
