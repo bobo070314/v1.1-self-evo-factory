@@ -1,28 +1,28 @@
-"""一键注入 API Token，不走交互式输入（避免 PowerShell 吞输入）。
-编辑下面的 REAL_TOKENS 字典，填入真实值，然后运行：
-  python scripts/inject_tokens.py
-"""
+#!/usr/bin/env python3
+import os, sys, json, subprocess
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-import json
-from pathlib import Path
+REPO = r'D:\bobo\projects\v1.1-self-evo-factory'
+api_file = os.path.join(REPO, 'config', 'api_tokens.json')
 
-# ====== 填入你的真实 Token ======
-REAL_TOKENS = {
-    "github_token": "",  # ghp_xxx
-    "notion_token": "",  # secret_xxx
-    "linear_token": "",  # lin_api_xxx
-    "tencent_docs_token": "",  # (optional)
-    "wecom_corpid": "",  # ww_xxx
-    "wecom_corpsecret": "",  # secret
-    "wecom_agentid": "",  # 纯数字, 如 1000002
-}
-# ================================
+# Get gh token
+r = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, timeout=10)
+token = r.stdout.strip()
+print(f'Token: {token[:10]}...{token[-6:]}')
 
-path = Path.home() / ".openclaw" / "api_tokens.json"
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(REAL_TOKENS, indent=2, ensure_ascii=False), encoding="utf-8")
+# Write
+os.makedirs(os.path.dirname(api_file), exist_ok=True)
+with open(api_file, 'w', encoding='utf-8') as f:
+    json.dump({'GITHUB_TOKEN': token, 'GH_TOKEN': token}, f, indent=2)
+print(f'Wrote {api_file}')
 
-filled = sum(1 for v in REAL_TOKENS.values() if v)
-print(f"[OK] {filled}/{len(REAL_TOKENS)} tokens injected -> {path}")
-if filled == 0:
-    print("⚠️  No tokens set. Edit the REAL_TOKENS dict above and re-run.")
+# Verify read
+with open(api_file, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+t = data.get('GITHUB_TOKEN', '')
+print(f'Verified: GITHUB_TOKEN={t[:10]}...{t[-4:]}')
+
+# API check
+r = subprocess.run(['gh', 'api', 'rate_limit', '--jq', '.rate.remaining'],
+                   capture_output=True, text=True, timeout=10)
+print(f'API remaining: {r.stdout.strip()}')
