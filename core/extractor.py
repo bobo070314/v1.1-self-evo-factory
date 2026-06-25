@@ -16,7 +16,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Callable
 
-from memory_types import MemoryFragment, MemoryClass, EXTRACT_TRIGGERS
+try:
+    from memory_types import MemoryFragment, MemoryClass, EXTRACT_TRIGGERS
+except ImportError:
+    from core.memory_types import MemoryFragment, MemoryClass, EXTRACT_TRIGGERS
 
 UTC = timezone.utc
 TZ = timezone(__import__("datetime").timedelta(hours=8))

@@ -56,8 +56,14 @@ class CoreOrchestrator:
         try:
             from core.memory_types import MemoryClass, MemoryFragment
             self._mtypes = type("_", (), {"MemoryClass": MemoryClass, "MemoryFragment": MemoryFragment})
-            from core.extractor import get_extractor
-            self._memory_system = get_extractor()
+            # extractor 依赖 memory_types，sys.path 已修复，单独导入
+            import core.extractor as _ext
+            if not hasattr(_ext, 'get_extractor'):
+                # extractor 可能用相对导入，手动构建
+                from core.extractor import Extractor
+                self._memory_system = Extractor()
+            else:
+                self._memory_system = _ext.get_extractor()
             init_log.append("memory:ok")
         except Exception as e:
             init_log.append(f"memory:fail({e})")
@@ -88,8 +94,12 @@ class CoreOrchestrator:
 
         # 5. Acceptance
         try:
-            from core.acceptance import check_cso, check_vis, check_code
-            self._acceptance = {"cso": check_cso, "vis": check_vis, "code": check_code}
+            from core.acceptance import AcceptanceGate
+            self._acceptance = {
+                "cso": AcceptanceGate.check_cso,
+                "vis": AcceptanceGate.check_vis,
+                "code": AcceptanceGate.check_code,
+            }
             init_log.append("acceptance:ok")
         except Exception as e:
             init_log.append(f"acceptance:fail({e})")
