@@ -31,7 +31,8 @@ class CoreOrchestrator:
         self._pipeline_stats = {"requests": 0, "blocks": 0, "cached": 0, "cloud": 0, "local": 0}
 
         # 模块引用
-        self._memory_system = None
+        self._memory_retriever = None
+        self._memory_store = None
         self._mtypes = None
         self._yolo_classifier = None
         self._coordinator = None
@@ -52,21 +53,27 @@ class CoreOrchestrator:
     def _init_modules(self):
         init_log = []
 
-        # 1. 记忆系统
+        # 1. 记忆系统（retriever 做 recall，extractor 做 store）
+        self._memory_retriever = None
+        self._memory_store = None
         try:
             from core.memory_types import MemoryClass, MemoryFragment
             self._mtypes = type("_", (), {"MemoryClass": MemoryClass, "MemoryFragment": MemoryFragment})
-            # extractor 依赖 memory_types，sys.path 已修复，单独导入
-            import core.extractor as _ext
-            if not hasattr(_ext, 'get_extractor'):
-                # extractor 可能用相对导入，手动构建
-                from core.extractor import Extractor
-                self._memory_system = Extractor()
-            else:
-                self._memory_system = _ext.get_extractor()
-            init_log.append("memory:ok")
+        except Exception:
+            self._mtypes = None
+        try:
+            from core.retriever_agent import get_retriever
+            self._memory_retriever = get_retriever()
+            init_log.append("memory_retrieve:ok")
         except Exception as e:
-            init_log.append(f"memory:fail({e})")
+            init_log.append(f"memory_retrieve:fail({e})")
+        try:
+            from core.extractor import get_extractor
+            self._memory_store = get_extractor()
+            self._memory_store.start()
+            init_log.append("memory_store:ok")
+        except Exception as e:
+            init_log.append(f"memory_store:fail({e})")
 
         # 2. YOLO 安全分类器
         try:
@@ -215,15 +222,15 @@ class CoreOrchestrator:
 
     # ── Pipeline Steps ──────────────────────────────────────────────
     def _step_memory_retrieve(self, user_input, steps):
-        if self._memory_system is None:
-            steps.append("memory:unavailable")
+        if self._memory_retriever is None:
+            steps.append("memory_retrieve:unavailable")
             return []
         try:
-            hits = self._memory_system.recall(user_input, limit=5)
+            hits = self._memory_retriever.retrieve(user_input, top_k=5)
             steps.append(f"memory:{len(hits)}_hits")
             return hits
-        except Exception:
-            steps.append("memory:error")
+        except Exception as e:
+            steps.append(f"memory_retrieve:error({e})")
             return []
 
     def _step_coordinate(self, user_input, steps):
@@ -359,21 +366,9 @@ class CoreOrchestrator:
             return raw_result
 
     def _step_memory_store(self, user_input, result, steps):
-        if self._memory_system is None:
-            steps.append("store:unavailable")
-            return
-        try:
-            if self._mtypes:
-                fragment = self._mtypes.MemoryFragment(
-                    content=user_input[:500],
-                    memory_class=self._mtypes.MemoryClass.PROJECT_STATE,
-                    weight=0.7,
-                    source="orchestrator",
-                )
-                self._memory_system.enqueue(fragment)
-                steps.append("store:enqueued")
-        except Exception as e:
-            steps.append(f"store:error({e})")
+        # extractor 是 daemon 监听日志自动提取，不需要手动 enqueue。
+        # retriever 会在下次 retrieve 时从 store 读出。
+        steps.append("store:deferred(daemon)")
 
     def _step_cache_set(self, plan, result, steps):
         if self._cache is None:
@@ -425,7 +420,8 @@ class CoreOrchestrator:
             "version": VERSION,
             "initialized": self._initialized,
             "modules": {
-                "memory": self._memory_system is not None,
+                "memory_retrieve": self._memory_retriever is not None,
+                "memory_store": self._memory_store is not None,
                 "yolo": self._yolo_classifier is not None,
                 "coordinator": self._coordinator is not None,
                 "cache": self._cache is not None,

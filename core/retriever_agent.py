@@ -21,7 +21,10 @@ from typing import List, Dict, Optional
 
 import requests
 
-from memory_types import MemoryFragment, MemoryClass, MEMORY_WEIGHTS
+try:
+    from memory_types import MemoryFragment, MemoryClass, MEMORY_WEIGHTS
+except ImportError:
+    from core.memory_types import MemoryFragment, MemoryClass, MEMORY_WEIGHTS
 
 UTC = timezone.utc
 BASE_DIR = Path(__file__).resolve().parent.parent
