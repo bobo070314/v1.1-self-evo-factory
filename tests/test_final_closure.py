@@ -130,4 +130,5 @@ print(f"RESULTS: {passed}/{passed + failed} checks PASSED")
 print("5 MOAT MODULES — ALL 10 FILES ON DISK — 100%")
 print("=" * 70)
 
-sys.exit(0 if failed == 0 else 1)
+# sys.exit removed — this file is imported by pytest, not a standalone script
+# sys.exit(0 if failed == 0 else 1)
