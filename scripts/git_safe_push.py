@@ -1,59 +1,47 @@
-#!/usr/bin/env python
-"""git_safe_push.py — Suppress all PowerShell NativeCommandError noise.
-All git output (stdout + stderr) goes to stdout. Always returns exit 0
-unless a true git error is detected (fatal/error/rejected/denied).
+#!/usr/bin/env python3
 """
-
+git_safe_push.py — 过滤 PowerShell stderr 误判的 git push 包装器。
+PowerShell 把 git 所有 stderr 输出当错误，导致 exit code 1。
+此包装器只对真正的 fatal/error 返回非零。
+"""
 import subprocess
 import sys
+import os
 
-TRUE_ERRORS = [
-    "fatal:",
-    "error:",
-    "Permission denied",
-    "Connection refused",
-    "Could not resolve host",
-    "remote rejected",
-    "remote: error",
-    "failed to push",
-    "unable to access",
-    "cannot lock ref",
-    "non-fast-forward",
-]
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+# Figure out repo root from script location
+import pathlib
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+FATAL_KEYWORDS = [b"fatal:", b"error:", b"Permission denied", b"cannot lock", b"refusing to merge"]
 
 
-def is_true_error(stderr: str) -> bool:
-    lower = stderr.lower()
-    for marker in TRUE_ERRORS:
-        if marker.lower() in lower:
+def is_real_error(stderr: bytes) -> bool:
+    for kw in FATAL_KEYWORDS:
+        if kw in stderr:
             return True
     return False
 
 
 def main():
-    args = sys.argv[1:]
-    cmd = ["git", "push"] + args
-
     result = subprocess.run(
-        cmd,
+        ["git", "push", "origin", "master"],
         capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
+        cwd=str(REPO_ROOT),
     )
+    stdout = result.stdout.decode("utf-8", errors="replace").strip()
+    stderr = result.stderr.decode("utf-8", errors="replace").strip()
 
-    # Merge all output to stdout - never write to stderr
-    if result.stdout:
-        sys.stdout.write(result.stdout.strip() + "\n")
-    if result.stderr:
-        sys.stdout.write(result.stderr.strip() + "\n")
+    if stdout:
+        print(stdout)
+    if stderr:
+        print(stderr, file=sys.stderr)
 
-    # Only fail on true errors
-    if result.returncode != 0 and is_true_error(result.stderr):
-        sys.stdout.write("git_safe_push: TRUE ERROR DETECTED\n")
-        return 1
-    return 0
+    if result.returncode != 0 and is_real_error(result.stderr):
+        sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
