@@ -37,6 +37,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from core.rules_orchestrator import RulesOrchestrator
 
 # ---- Severity ----
 CRITICAL = "critical"
@@ -522,6 +523,9 @@ CHECK_NAMES = {
 def classify(text_or_path: str, checks: List = None) -> Dict:
     """Single entry point. classify() is the only public API.
 
+    First attempts rules_orchestrator-based detection (from .local.md files).
+    Falls back to legacy 23 check functions for uncovered patterns.
+
     Args:
         text_or_path: Code text to scan, or a file path.
         checks: Optional list of check functions to run (default: all 23).
@@ -542,21 +546,59 @@ def classify(text_or_path: str, checks: List = None) -> Dict:
     all_failures = []
     counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
 
+    # Phase 1: Rules-Orchestrator (from .local.md files)
+    try:
+        orch = RulesOrchestrator()
+        rule_result = orch.check_output(text)
+        if rule_result["blocked"]:
+            for t in rule_result["triggered"]:
+                all_failures.append({
+                    "id": f"RULES-{t}",
+                    "level": "critical",
+                    "category": "security",
+                    "message": f"Blocked by rule: {t}",
+                    "line": 0,
+                    "context": rule_result.get("warnings", [""])[0][:200] if rule_result.get("warnings") else "",
+                })
+                counts["critical"] = counts.get("critical", 0) + 1
+        for w in rule_result.get("warnings", []):
+            all_failures.append({
+                "id": f"RULES-{w}",
+                "level": "high",
+                "category": "security",
+                "message": f"Warning by rule: {w}",
+                "line": 0,
+                "context": "",
+            })
+            counts["high"] = counts.get("high", 0) + 1
+    except Exception:
+        pass  # Silent fallback to legacy checks
+
+    # Phase 2: Legacy check functions (for uncovered patterns)
     for check_fn in checks:
         failures = check_fn(text, lines)
         for f in failures:
             counts[f["level"]] = counts.get(f["level"], 0) + 1
         all_failures.extend(failures)
 
-    passed = len(all_failures) == 0
+    # Deduplicate by (level, message) to avoid double-reporting same issue
+    seen = set()
+    deduped = []
+    for f in all_failures:
+        key = (f["level"], f["message"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
+
+    passed = len(deduped) == 0
 
     return {
         "passed": passed,
-        "total_checks": len(checks),
-        "total_failures": len(all_failures),
+        "total_checks": len(checks) + 1,
+        "total_failures": len(deduped),
         "severity_counts": counts,
-        "failures": all_failures,
-        "summary": f"{len(all_failures)} issues found ({counts['critical']} critical, "
+        "failures": deduped,
+        "summary": f"{len(deduped)} issues found ({counts['critical']} critical, "
                     f"{counts['high']} high, {counts['medium']} medium, {counts['low']} low)",
     }
 

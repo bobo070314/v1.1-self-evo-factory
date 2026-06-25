@@ -26,6 +26,7 @@ import requests
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RULES_FILE = BASE_DIR / "core" / "coordinator_rules.md"
+ROUTING_RULES_FILE = BASE_DIR / "core" / "rules" / "agent-routing.local.md"
 
 OLLAMA_URL = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11634")
 OLLAMA_MODEL = os.environ.get("OLLAMA_CHECKER_MODEL", "qwen3.5:2b")
@@ -73,6 +74,7 @@ class CoordinatorAgent:
         self.rules_file = rules_file or RULES_FILE
         self.rules: Dict[str, List[str]] = {}
         self._load_rules()
+        self._load_routing_rules()
         self._history: List[Dict] = []  # Audit trail
 
     # ---- Load rules from Markdown ----
@@ -112,19 +114,84 @@ class CoordinatorAgent:
         global_rules = self.rules.get("global", [])
         return specific + global_rules
 
+    # ---- Keyword routing from rules file ----
+    @staticmethod
+    def _parse_routing_rules(filepath: Path) -> Dict[str, List[str]]:
+        """Parse agent-routing.local.md into {agent_id: [keyword, ...]}.
+
+        Format:
+            ---
+            name: agent-routing
+            enabled: true
+            ---
+            agent: sec
+            keywords:
+              - 安全
+              - ...
+        """
+        if not filepath.exists():
+            return {}
+
+        raw = filepath.read_text(encoding="utf-8", errors="replace")
+
+        # Skip YAML front matter (between first two --- lines)
+        lines = raw.splitlines()
+        in_front_matter = False
+        body_lines = []
+        dashes_seen = 0
+        for line in lines:
+            if line.strip() == "---":
+                dashes_seen += 1
+                if dashes_seen == 1:
+                    in_front_matter = True
+                    continue
+                elif dashes_seen == 2:
+                    in_front_matter = False
+                    continue
+            if not in_front_matter:
+                body_lines.append(line)
+
+        body = "\n".join(body_lines)
+
+        routing: Dict[str, List[str]] = {}
+        current_agent: Optional[str] = None
+
+        for line in body.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            # agent: <name>
+            agent_match = re.match(r"^agent:\s+(\S+)", stripped)
+            if agent_match:
+                current_agent = agent_match.group(1).lower()
+                routing.setdefault(current_agent, [])
+                continue
+
+            # keywords list item: - <keyword>
+            kw_match = re.match(r"^\s*-\s+(.+)", line)
+            if current_agent and kw_match:
+                kw = kw_match.group(1).strip().lower()
+                if kw:
+                    routing[current_agent].append(kw)
+
+        return routing
+
+    def _load_routing_rules(self):
+        """Load keyword routing rules from agent-routing.local.md."""
+        self._routing_keywords: Dict[str, List[str]] = self._parse_routing_rules(ROUTING_RULES_FILE)
+        if not self._routing_keywords:
+            print(f"[coordinator] WARNING: routing rules not found or empty: {ROUTING_RULES_FILE}")
+
     # ---- Dispatch: select agent(s) from query ----
     def select_agent(self, user_query: str) -> str:
-        """Pick the best agent for this query. Simple keyword routing as baseline."""
+        """Pick the best agent for this query. Keyword routing from agent-routing.local.md."""
         q = user_query.lower()
 
-        keywords = {
-            "sec":  ["安全", "漏洞", "审计", "security", "vuln", "audit"],
-            "code": ["代码", "重构", "bug", "fix", "refactor", "实现", "函数", "组件"],
-            "vis":  ["样式", "css", "tailwind", "ui", "配色", "布局", "响应式", "动画"],
-            "ops":  ["部署", "docker", "ci", "服务器", "deploy", "发布", "ci/cd"],
-            "doc":  ["文档", "readme", "api文档", "说明", "doc"],
-            "cso":  ["产品", "需求", "prd", "竞品", "策略", "分析", "规划"],
-        }
+        keywords = getattr(self, "_routing_keywords", None) or {}
+
+        if not keywords:
+            return "code"  # Fallback when rules unavailable
 
         scores = {}
         for agent_id, kw_list in keywords.items():

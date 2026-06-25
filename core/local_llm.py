@@ -58,9 +58,14 @@ def is_ollama_alive() -> bool:
 
 # ── Ollama 推理 ──
 def _ollama_chat(prompt: str) -> str:
+    # 给 prompt 加输出紧箍咒
+    # qwen3.5:2b 对 [OUTPUT] 标签理解力有限（2.3B Q8），不强求标签格式
+    # prompt 末尾不加 [OUTPUT] 标签（qwen 会当成补全文本）
+    reinforced_prompt = f"""{prompt}
+"""
     payload = {
         "model": MODEL,
-        "prompt": prompt,
+        "prompt": reinforced_prompt,
         "stream": False,
         "keep_alive": -1,
         "options": {"num_ctx": 1024, "num_predict": 512, "temperature": 0.2,

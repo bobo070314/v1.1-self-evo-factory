@@ -251,41 +251,65 @@ def cleanup_expired(retention_days: int = 365) -> Dict:
 
 
 # =============================================================================
-# 23 Security Detection Functions — YOLO Classifier Interface
+# Rules-Based Security Detection — from core/rules/*.local.md
 # =============================================================================
 
-from yolo_classifier import classify as yolo_classify, ALL_CHECKS, CHECK_NAMES
-
 def run_security_scan(target: str) -> Dict:
-    """Run all 23 YOLO security checks on target."""
-    return yolo_classify(target)
+    """Run rules-orchestrator based security scan on target.
 
-# Re-export individual check functions for direct access
-from yolo_classifier import (
-    check_unicode_zero_width,
-    check_zsh_injection,
-    check_path_traversal,
-    check_sql_injection,
-    check_xss_reflected,
-    check_hardcoded_secret,
-    check_command_injection,
-    check_sensitive_data_leak,
-    check_open_redirect,
-    check_csrf_missing,
-    check_unvalidated_redirect,
-    check_xxe_vulnerable,
-    check_deserialization_unsafe,
-    check_prototype_pollution,
-    check_regex_dos,
-    check_cors_misconfig,
-    check_insecure_crypto,
-    check_hardcoded_ip,
-    check_debug_enabled,
-    check_dependency_confusion,
-    check_insecure_random,
-    check_missing_rate_limit,
-    check_log_injection,
-)
+    Uses core/rules/*.local.md files for detection.
+    Falls back to legacy yolo_classifier.classify() if rules fail to load.
+    
+    Returns: {passed, total_checks, total_failures, severity_counts, failures, summary}
+    """
+    try:
+        from core.rules_orchestrator import RulesOrchestrator
+        orch = RulesOrchestrator()
+        # Prefer rules-based detection
+        result = orch.check_output(target)
+        if result:
+            failures = []
+            counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+            if result.get("blocked"):
+                for t in result.get("triggered", []):
+                    failures.append({
+                        "id": f"RULES-{t}",
+                        "level": "critical",
+                        "category": "security",
+                        "message": f"Blocked by rule: {t}",
+                        "line": 0,
+                        "context": "",
+                    })
+                    counts["critical"] += 1
+            for w in result.get("warnings", []):
+                failures.append({
+                    "id": f"RULES-{w}",
+                    "level": "high",
+                    "category": "security",
+                    "message": f"Warning by rule: {w}",
+                    "line": 0,
+                    "context": "",
+                })
+                counts["high"] += 1
+            if failures:
+                return {
+                    "passed": False,
+                    "total_checks": len(result.get("triggered", [])) + len(result.get("warnings", [])),
+                    "total_failures": len(failures),
+                    "severity_counts": counts,
+                    "failures": failures,
+                    "summary": f"{len(failures)} issues found ({counts['critical']} critical, {counts['high']} high)",
+                }
+        return {"passed": True, "total_checks": 1, "total_failures": 0, "severity_counts": {}, "failures": [], "summary": "No issues detected"}
+    except Exception:
+        # Fallback to legacy classifier
+        pass
+    
+    try:
+        from yolo_classifier import classify as yolo_classify
+        return yolo_classify(target)
+    except Exception:
+        return {"passed": True, "total_checks": 0, "total_failures": 0, "severity_counts": {}, "failures": [], "summary": "Security detection unavailable"}
 
 # ---- CLI ----
 

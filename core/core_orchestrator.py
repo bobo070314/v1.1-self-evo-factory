@@ -45,6 +45,20 @@ AGENT_DISPLAY = {
 }
 
 
+def _extract_output(text: str) -> str:
+    """精准提取 [OUTPUT]...[/OUTPUT] 块，无标签时返回空"""
+    if not text:
+        return ""
+    import re
+    m = re.search(r'\[OUTPUT\](.*?)\[/OUTPUT\]', text, re.DOTALL | re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    # 没标签但很短——可能只吐了结果
+    if len(text) < 100:
+        return text.strip()
+    return ""   # 长文本无标签视为无效
+
+
 class CoreOrchestrator:
     def __init__(self):
         self._started_at = datetime.now(TZ).isoformat()
@@ -62,6 +76,7 @@ class CoreOrchestrator:
         self._protector = None
         self._kairos = None
         self._llm_chat = None
+        self._rules_orchestrator = None
 
         self._init_modules()
 
@@ -146,6 +161,14 @@ class CoreOrchestrator:
         except Exception as e:
             init_log.append(f"kairos:fail({e})")
 
+        # 8. 规则编排器（文件驱动安全门禁）
+        try:
+            from core.rules_orchestrator import RulesOrchestrator
+            self._rules_orchestrator = RulesOrchestrator()
+            init_log.append("rules_orchestrator:ok")
+        except Exception as e:
+            init_log.append(f"rules_orchestrator:fail({e})")
+
         self._init_log = init_log
         self._initialized = True
 
@@ -155,7 +178,7 @@ class CoreOrchestrator:
             return self._try_cloud(prompt)
         return cloud_fn
 
-    def _try_cloud(self, prompt: str) -> str:
+    def _try_cloud(self, prompt: str, require_tags: bool = False) -> str:
         """调用 DeepSeek API"""
         api_key = os.environ.get("DEEPSEEK_API_KEY", "")
         if not api_key:
@@ -173,7 +196,11 @@ class CoreOrchestrator:
                 timeout=60,
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"].strip()
+            raw = resp.json()["choices"][0]["message"]["content"].strip()
+            if require_tags:
+                extracted = _extract_output(raw)
+                return extracted if extracted else raw
+            return raw
         except Exception:
             return ""
 
@@ -243,6 +270,28 @@ class CoreOrchestrator:
             return {"ok": False, "result": "执行失败", "blocked": False, "cached": False,
                     "pipeline_steps": steps, "memory_used": len(memories)}
 
+        # Step 4.5: 规则检查（文件驱动安全门禁）
+        if self._rules_orchestrator:
+            try:
+                rule_result = self._rules_orchestrator.check_output(result)
+                if rule_result["blocked"]:
+                    steps.append(f"rules:blocked({','.join(rule_result['triggered'])})")
+                    self._pipeline_stats["blocked"] += 1
+                    return {
+                        "ok": False,
+                        "result": f"被规则阻断: {','.join(rule_result['triggered'])}",
+                        "blocked": True,
+                        "cached": False,
+                        "pipeline_steps": steps,
+                        "memory_used": len(memories),
+                    }
+                for w in rule_result["warnings"]:
+                    steps.append(f"rules:warn({w})")
+                if rule_result["triggered"]:
+                    steps.append(f"rules:checked({len(rule_result['triggered'])}_triggers)")
+            except Exception as e:
+                steps.append(f"rules:error({e})")
+
         # Step 5: AI 验收 + 自我迭代
         result = self._check_and_evolve(result, user_input, plan, steps)
 
@@ -286,19 +335,23 @@ class CoreOrchestrator:
             steps.append("execute:no_input")
             return ""
 
-        prompt = f"{self._build_agent_prompt(agent_id)}\n\n用户请求：{user_input}\n\n直接输出结果。"
-        cloud_result = self._try_cloud(prompt)
+        raw_prompt = self._build_agent_prompt(agent_id)
+        if user_input:
+            raw_prompt += f"\n\n用户请求：{user_input}"
+        prompt = raw_prompt + "\n\nCRITICAL: Wrap your final answer in [OUTPUT]...[/OUTPUT] tags. No text outside.\n[OUTPUT]"
+        cloud_result = self._try_cloud(prompt, require_tags=True)
         if cloud_result:
             steps.append("execute:cloud")
             self._pipeline_stats["cloud"] += 1
             return cloud_result
 
         if self._llm_chat:
+            # local 分支用不含标签的干净 prompt（qwen 不理解 [OUTPUT] 标签）
+            local_prompt = f"{self._build_agent_prompt(agent_id)}\n\n用户请求：{user_input}\n\n直接输出结果，不要额外解释。"
             try:
-                raw, source = self._llm_chat(prompt)
+                raw, source = self._llm_chat(local_prompt)
                 steps.append(f"execute:local({source})")
-                self._pipeline_stats["local"] += 1
-                return raw
+                return raw if raw else f"[{agent_id}] 无法生成内容"
             except Exception as e:
                 steps.append(f"execute:local_error({e})")
 
@@ -406,6 +459,7 @@ class CoreOrchestrator:
                 "kairos": self._kairos is not None,
                 "llm_engine": self._llm_chat is not None,
                 "cloud_api": bool(os.environ.get("DEEPSEEK_API_KEY", "")),
+                "rules_orchestrator": self._rules_orchestrator is not None,
             },
             "init_log": getattr(self, "_init_log", []),
             "pipeline_stats": self._pipeline_stats,
