@@ -189,8 +189,8 @@ class CoreOrchestrator:
             return {"ok": False, "result": "执行失败", "blocked": False, "cached": False,
                     "pipeline_steps": steps, "memory_used": len(memories)}
 
-        # Step 6: YOLO 安全审计（输出侧）
-        if not self._step_yolo_audit(result, steps):
+        # Step 6: YOLO 安全审计（输出侧，code/vis 跳过，只审文本/配置）
+        if not self._step_yolo_audit(result, plan, steps):
             self._pipeline_stats["blocks"] += 1
             return {"ok": False, "result": "生成的内容被安全审计拦截", "blocked": True, "cached": False,
                     "pipeline_steps": steps, "memory_used": len(memories)}
@@ -303,7 +303,12 @@ class CoreOrchestrator:
         except Exception:
             return ""
 
-    def _step_yolo_audit(self, raw_result, steps):
+    def _step_yolo_audit(self, raw_result, plan, steps):
+        # YOLO 只审计自然语言/配置/运维输出，跳过代码和设计
+        agent_id = plan.get("agent_id", plan.get("agent_type", ""))
+        if agent_id in ("code", "vis"):
+            steps.append("yolo_audit:skip(code/vis)")
+            return True
         if self._yolo_classifier is None:
             steps.append("yolo_audit:unavailable")
             return True
@@ -317,7 +322,7 @@ class CoreOrchestrator:
             return True
         except Exception as e:
             steps.append(f"yolo_audit:error({e})")
-            return True  # 审计故障时放行
+            return True
 
     def _step_accept(self, plan, raw_result, steps):
         if self._acceptance is None:
