@@ -304,10 +304,11 @@ class CoreOrchestrator:
             return ""
 
     def _step_yolo_audit(self, raw_result, plan, steps):
-        # YOLO 只审计自然语言/配置/运维输出，跳过代码和设计
+        # YOLO 只审计纯自然语言（聊天/指令输入侧），跳过所有生成类输出
+        # code/vis/cso/ops 都走 acceptance gate 做质量验收，不需要安全审计
         agent_id = plan.get("agent_id", plan.get("agent_type", ""))
-        if agent_id in ("code", "vis"):
-            steps.append("yolo_audit:skip(code/vis)")
+        if agent_id in ("code", "vis", "cso", "ops", "doc"):
+            steps.append(f"yolo_audit:skip({agent_id})")
             return True
         if self._yolo_classifier is None:
             steps.append("yolo_audit:unavailable")
