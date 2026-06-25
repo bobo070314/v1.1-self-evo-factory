@@ -250,6 +250,43 @@ def cleanup_expired(retention_days: int = 365) -> Dict:
     return {"purged": len(purged), "kept": len(kept)}
 
 
+# =============================================================================
+# 23 Security Detection Functions — YOLO Classifier Interface
+# =============================================================================
+
+from yolo_classifier import classify as yolo_classify, ALL_CHECKS, CHECK_NAMES
+
+def run_security_scan(target: str) -> Dict:
+    """Run all 23 YOLO security checks on target."""
+    return yolo_classify(target)
+
+# Re-export individual check functions for direct access
+from yolo_classifier import (
+    check_unicode_zero_width,
+    check_zsh_injection,
+    check_path_traversal,
+    check_sql_injection,
+    check_xss_reflected,
+    check_hardcoded_secret,
+    check_command_injection,
+    check_sensitive_data_leak,
+    check_open_redirect,
+    check_csrf_missing,
+    check_unvalidated_redirect,
+    check_xxe_vulnerable,
+    check_deserialization_unsafe,
+    check_prototype_pollution,
+    check_regex_dos,
+    check_cors_misconfig,
+    check_insecure_crypto,
+    check_hardcoded_ip,
+    check_debug_enabled,
+    check_dependency_confusion,
+    check_insecure_random,
+    check_missing_rate_limit,
+    check_log_injection,
+)
+
 # ---- CLI ----
 
 if __name__ == "__main__":
