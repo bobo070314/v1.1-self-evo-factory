@@ -19,7 +19,7 @@ SESSION.trust_env = False
 OLLAMA_BASE = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11634").rstrip("/")
 MODEL = os.getenv("LOCAL_LLM_MODEL", "qwen3.5:2b")
 CLOUD_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-INFERENCE_TIMEOUT = 120
+INFERENCE_TIMEOUT = 300
 KB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "kb")
 
 # ── 网络探测 ──
@@ -62,14 +62,25 @@ def _ollama_chat(prompt: str) -> str:
         "model": MODEL,
         "prompt": prompt,
         "stream": False,
-        "options": {"num_ctx": 2048, "num_predict": 1024, "temperature": 0.2},
+        "keep_alive": -1,
+        "options": {"num_ctx": 1024, "num_predict": 512, "temperature": 0.2,
+                     "num_gpu": 25},
     }
     r = SESSION.post(f"{OLLAMA_BASE}/api/generate", json=payload, timeout=INFERENCE_TIMEOUT)
     r.raise_for_status()
     data = r.json()
     text = (data.get("response") or "").strip()
+    thinking = (data.get("thinking") or "").strip()
+
+    # 策略0: [OUTPUT]...[/OUTPUT] 标签提取（response 优先，其次 thinking）
+    for source in [text, thinking]:
+        m = re.search(r'\[OUTPUT\](.*?)\[/OUTPUT\]', source, re.DOTALL)
+        if m:
+            extracted = m.group(1).strip()
+            if extracted:
+                return extracted
+
     if not text:
-        thinking = (data.get("thinking") or "").strip()
         if thinking:
             # 策略1: 找明确的回复标记
             for marker in ["Final Response:", "最终回复:", "Reply:", "Final:", "输出:", "Output:", "答：", "答复", "回答:", "OK"]:

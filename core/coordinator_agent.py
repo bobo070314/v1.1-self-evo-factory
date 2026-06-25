@@ -273,7 +273,8 @@ class CoordinatorAgent:
         self._history.append(entry)
         return {
             "agent_id": agent_id,
-            "agent_type": agent_id,  # agent_id maps 1:1 to acceptance type
+            "agent_type": agent_id,
+            "user_query": user_query,
             "output": output,
             "verdict": entry["verdict"],
             "rounds": entry.get("rounds", 0),
