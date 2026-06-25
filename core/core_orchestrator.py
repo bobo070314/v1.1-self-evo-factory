@@ -53,10 +53,7 @@ def _extract_output(text: str) -> str:
     m = re.search(r'\[OUTPUT\](.*?)\[/OUTPUT\]', text, re.DOTALL | re.IGNORECASE)
     if m:
         return m.group(1).strip()
-    # 没标签但很短——可能只吐了结果
-    if len(text) < 100:
-        return text.strip()
-    return ""   # 长文本无标签视为无效
+    return ""   # 无标签时直接返回空，不回退到原始文本
 
 
 class CoreOrchestrator:
