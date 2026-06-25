@@ -71,20 +71,45 @@ def _ollama_chat(prompt: str) -> str:
     if not text:
         thinking = (data.get("thinking") or "").strip()
         if thinking:
-            for marker in ["Final:", "输出:", "Output:", "答：", "答复", "回答:"]:
+            # 策略1: 找明确的回复标记
+            for marker in ["Final Response:", "最终回复:", "Reply:", "Final:", "输出:", "Output:", "答：", "答复", "回答:", "OK"]:
                 if marker in thinking:
-                    text = thinking.split(marker)[-1].strip()
-                    text = text.split("\n")[0].strip().strip('"').strip("'").strip("*").strip()
-                    for prefix in ["1.", "2.", "3.", "4.", "5.", "**", "- "]:
-                        if text.startswith(prefix):
-                            text = text[len(prefix):].strip()
-                    break
+                    tail = thinking.rsplit(marker, 1)[-1].strip()
+                    # 取标记后的第一行有意义文本
+                    for line in tail.split("\n"):
+                        line = line.strip().strip('"').strip("'").strip("*").strip()
+                        if line and not line.startswith(("1.", "2.", "3.", "4.", "5.", "*", "Option")):
+                            text = line
+                            break
+                    if text:
+                        break
+            # 策略2: thinking 末尾的最终回复
             if not text:
+                # qwen thinking 格式: 顶部是 Thinking Process，底部是最终输出
                 for line in reversed(thinking.split("\n")):
                     line = line.strip()
-                    if any('\u4e00' <= c <= '\u9fff' for c in line) and len(line) > 10:
-                        if not line.startswith("*") and not line.startswith("1.") and "Option" not in line:
-                            text = line.strip('"').strip("'").strip("*").strip()
+                    if not line:
+                        continue
+                    # 跳过步骤描述行
+                    if re.match(r'^(\d+\.|Option|\*\*|Step|Thinking)', line):
+                        continue
+                    # 跳过中文步骤描述
+                    if any(skip in line for skip in ["Analyze", "Process:", "Input:", "Constraint:", "Goal:", "评估", "检查", "验证"]):
+                        continue
+                    # 找真正的回复内容
+                    if len(line) > 1:
+                        text = line.strip('"').strip("'").strip("*").strip()
+                        break
+            # 策略3: 找 thinking 结束后 qwen 真正回复的第一个中文/英文行
+            if not text:
+                # 跳过 thinking 头部，从中间往后找
+                parts = thinking.split("\n")
+                mid = len(parts) // 2
+                for line in parts[mid:]:
+                    line = line.strip()
+                    if line and not re.match(r'^(\d+\.|Option|\*\*|Step|Thinking|Input|Goal|Constraint)', line):
+                        if not line.startswith("*"):
+                            text = line
                             break
     return text or "[本地模型返回空]"
 

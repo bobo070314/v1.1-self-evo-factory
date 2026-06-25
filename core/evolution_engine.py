@@ -226,7 +226,10 @@ def apply_deepseek_suggestion(state, suggestion):
         )
 
     # V5.1 ACTIVE EVOLUTION: apply code patches to whitelisted files only
-    _apply_safe_patches(suggestion, now)
+    # _apply_safe_patches DISABLED — flagged by Windows Defender as
+    # HackTool:Win32/Meterpreter (remote code injection pattern).
+    # CoreOrchestrator handles patching via secure sandboxed pipeline.
+    # _apply_safe_patches(suggestion, now)
 
     print(f"[EVO] {now} DeepSeek suggestion applied: {reason} {applied}")
 
@@ -517,7 +520,11 @@ _GIT = _WORKSPACE / "git.cmd"
 GIT_CMD = str(_GIT) if _GIT.exists() else None
 
 
-def _apply_safe_patches(suggestion: dict, ts_now: str) -> bool:
+# ═══════════════════════════════════════════════════════════════════════
+# DISABLED: _apply_safe_patches — Defender flagged as Meterpreter C2.
+# See core_orchestrator._step_safety_audit for the secure replacement.
+# ═══════════════════════════════════════════════════════════════════════
+def _apply_safe_patches_DISABLED(suggestion: dict, ts_now: str) -> bool:
     """Apply DeepSeek code patches to whitelisted files only.
 
     Gate rules:
@@ -858,9 +865,11 @@ def main():
             print(f"[EVO] Autophagy: {prune_actions}")
 
         # V5.0: Zero-Touch
-        actions = auto_maintenance(state)
-        if actions:
-            print(f"[EVO] Maintenance actions: {actions}")
+        # auto_maintenance DISABLED — file mutation flagged as Trojan behavior.
+        # Disk cleanup + log rotation moved to core/memory_janitor.py
+        # actions = auto_maintenance(state)
+        # if actions:
+        #     print(f"[EVO] Maintenance actions: {actions}")
 
         log_cycle(state)
         save_state(state)
