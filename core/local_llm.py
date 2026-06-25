@@ -85,49 +85,10 @@ def _ollama_chat(prompt: str) -> str:
             if extracted:
                 return extracted
 
-    if not text:
-        if thinking:
-            # 策略1: 找明确的回复标记
-            for marker in ["Final Response:", "最终回复:", "Reply:", "Final:", "输出:", "Output:", "答：", "答复", "回答:", "OK"]:
-                if marker in thinking:
-                    tail = thinking.rsplit(marker, 1)[-1].strip()
-                    # 取标记后的第一行有意义文本
-                    for line in tail.split("\n"):
-                        line = line.strip().strip('"').strip("'").strip("*").strip()
-                        if line and not line.startswith(("1.", "2.", "3.", "4.", "5.", "*", "Option")):
-                            text = line
-                            break
-                    if text:
-                        break
-            # 策略2: thinking 末尾的最终回复
-            if not text:
-                # qwen thinking 格式: 顶部是 Thinking Process，底部是最终输出
-                for line in reversed(thinking.split("\n")):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    # 跳过步骤描述行
-                    if re.match(r'^(\d+\.|Option|\*\*|Step|Thinking)', line):
-                        continue
-                    # 跳过中文步骤描述
-                    if any(skip in line for skip in ["Analyze", "Process:", "Input:", "Constraint:", "Goal:", "评估", "检查", "验证"]):
-                        continue
-                    # 找真正的回复内容
-                    if len(line) > 1:
-                        text = line.strip('"').strip("'").strip("*").strip()
-                        break
-            # 策略3: 找 thinking 结束后 qwen 真正回复的第一个中文/英文行
-            if not text:
-                # 跳过 thinking 头部，从中间往后找
-                parts = thinking.split("\n")
-                mid = len(parts) // 2
-                for line in parts[mid:]:
-                    line = line.strip()
-                    if line and not re.match(r'^(\d+\.|Option|\*\*|Step|Thinking|Input|Goal|Constraint)', line):
-                        if not line.startswith("*"):
-                            text = line
-                            break
-    return text or "[本地模型返回空]"
+    # 策略1: 严格要求输出在 [OUTPUT]...[/OUTPUT] 标签内，没有标签直接返回空
+    if not text and not thinking:
+        return "[本地模型返回空]"
+    return ""  # 没有标签时返回空，让上层处理
 
 
 # ── Cloud ──

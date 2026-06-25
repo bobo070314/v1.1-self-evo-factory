@@ -332,10 +332,22 @@ class CoreOrchestrator:
             steps.append("execute:no_input")
             return ""
 
-        raw_prompt = self._build_agent_prompt(agent_id)
+        # 构建系统提示
+        system_prompt = self._build_agent_prompt(agent_id)
         if user_input:
-            raw_prompt += f"\n\n用户请求：{user_input}"
-        prompt = raw_prompt + "\n\nCRITICAL: Wrap your final answer in [OUTPUT]...[/OUTPUT] tags. No text outside.\n[OUTPUT]"
+            system_prompt += f"\n\n用户请求：{user_input}"
+        
+        # 添加严格的输出规则到系统提示
+        SYSTEM_PROMPT_SUFFIX = """# CRITICAL OUTPUT RULE
+You MUST wrap your final answer STRICTLY within [OUTPUT] and [/OUTPUT] tags.
+ABSOLUTELY NO explanatory text, apologies, reasoning, or markdown outside these tags.
+The content inside [OUTPUT] must be the direct solution (code, JSON, or text) requested.
+Failure to follow this rule will result in task failure."""
+        
+        # 构建最终 prompt
+        prompt = system_prompt + "\n\n" + SYSTEM_PROMPT_SUFFIX + "\n\n[OUTPUT]"
+        
+        # 尝试云端执行
         cloud_result = self._try_cloud(prompt, require_tags=True)
         if cloud_result:
             steps.append("execute:cloud")
@@ -343,11 +355,30 @@ class CoreOrchestrator:
             return cloud_result
 
         if self._llm_chat:
-            # local 分支用不含标签的干净 prompt（qwen 不理解 [OUTPUT] 标签）
-            local_prompt = f"{self._build_agent_prompt(agent_id)}\n\n用户请求：{user_input}\n\n直接输出结果，不要额外解释。"
+            # 本地执行：使用严格的 prompt，不添加额外标签
+            local_prompt = system_prompt + "\n\n直接输出结果，不要额外解释。\n\n[OUTPUT]"
             try:
                 raw, source = self._llm_chat(local_prompt)
-                steps.append(f"execute:local({source})")
+                # 严格提取输出
+                def extract_output(text: str) -> str:
+                    """精准提取 [OUTPUT]...[/OUTPUT] 之间的内容"""
+                    if not text:
+                        return ""
+                    # 优先匹配标准标签
+                    import re
+                    match = re.search(r'\[OUTPUT\](.*?)\[/OUTPUT\]', text, re.DOTALL | re.IGNORECASE)
+                    if match:
+                        return match.group(1).strip()
+                    return "" # 没有标签时直接返回空
+                    
+                clean_result = extract_output(raw)
+                if not clean_result:
+                    # 如果本地模型返回无效输出，记录错误
+                    steps.append(f"execute:local_invalid({source})")
+                    # 但仍返回原始结果
+                else:
+                    steps.append(f"execute:local({source})")
+                    return clean_result
                 return raw if raw else f"[{agent_id}] 无法生成内容"
             except Exception as e:
                 steps.append(f"execute:local_error({e})")
