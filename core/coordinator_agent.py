@@ -28,6 +28,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 RULES_FILE = BASE_DIR / "core" / "coordinator_rules.md"
 ROUTING_RULES_FILE = BASE_DIR / "core" / "rules" / "agent-routing.local.md"
 
+# Phoenix: Worktree & Event Bus integration
+try:
+    from worktree_manager import WorktreeManager
+    from event_bus import EventBus
+    PHOENIX_READY = True
+except ImportError:
+    PHOENIX_READY = False
+
 OLLAMA_URL = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11634")
 OLLAMA_MODEL = os.environ.get("OLLAMA_CHECKER_MODEL", "qwen3.5:2b")
 CHECKER_TIMEOUT = int(os.environ.get("CHECKER_TIMEOUT", "60"))
@@ -353,9 +361,13 @@ class CoordinatorAgent:
         """
         并行调度：同时调度多个Agent，按置信度排序返回。
         Claude Code 风格：4子Agent并行。
+        Phoenix 追加：Worktree 隔离环境。
         """
         import concurrent.futures
         import threading
+        
+        # Phoenix: Initialize worktree manager if available
+        wm = WorktreeManager(base_path=BASE_DIR) if PHOENIX_READY else None
         
         # 选 top-N agents (按路由关键词匹配数)
         agent_scores = {}
@@ -373,15 +385,26 @@ class CoordinatorAgent:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_parallel) as executor:
             futures = []
             for agent_id in sorted_agents:
+                # Phoenix: Execute in isolated worktree
+                if wm:
+                    task_id = f"parallel_{agent_id}_{int(time.time())}"
+                    tree_path = wm.create_isolated_tree(task_id)
+                else:
+                    tree_path = None
+                    
                 future = executor.submit(self.dispatch, user_query)
-                futures.append((agent_id, future))
+                futures.append((agent_id, future, tree_path))
             
-            for agent_id, future in futures:
+            for agent_id, future, tree_path in futures:
                 try:
                     result = future.result(timeout=30)
                     results.append((agent_id, result))
                 except Exception as e:
                     results.append((agent_id, {"error": str(e)}))
+                finally:
+                    # Phoenix: Cleanup worktree
+                    if wm and tree_path:
+                        wm.cleanup_tree(agent_id)
         
         return {
             "parallel_agents": sorted_agents,
