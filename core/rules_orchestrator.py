@@ -69,6 +69,23 @@ class RulesOrchestrator:
         }
         return self._evaluate("bash", field_values)
 
+
+    def classify(self, text: str, context: dict = None) -> tuple:
+        """用户输入文本分类检测。返回 (is_blocked: bool, reason: str)。"""
+        ctx = context or {}
+        field_values = {
+            "text": text or "",
+            "command": text or "",
+            "content": text or "",
+            "prompt": text or "",
+        }
+        result = self._evaluate("all", field_values)
+        if result["blocked"]:
+            reasons = ", ".join(result["triggered"])
+            return (True, reasons)
+        return (False, "")
+
+
     def _evaluate(self, event_type: str, field_values: Dict[str, str]) -> Dict:
         """内核对 field_values 做规则评估，分类 block/warn。"""
         results = evaluate_rules(self._rules, event_type, field_values)

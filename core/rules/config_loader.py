@@ -38,7 +38,7 @@ class Condition:
         return cls(
             field=data.get("field", "content"),
             operator=data.get("operator", "regex_match"),
-            pattern=data.get("pattern", ""),
+            pattern=data.get("pattern") or data.get("value") or "",
         )
 
     def evaluate(self, field_value: str) -> bool:

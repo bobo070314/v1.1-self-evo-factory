@@ -92,14 +92,9 @@ def _ollama_chat(prompt: str) -> str:
 
 
 # ── Cloud ──
+# DISABLED PERMANENT 2026-06-26 (刷钱防护)
 def _cloud_chat(prompt: str) -> str:
-    r = SESSION.post(
-        "https://api.deepseek.com/v1/chat/completions",
-        json={"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
-        headers={"Authorization": f"Bearer {CLOUD_KEY}"},
-        timeout=30,
-    )
-    return r.json()["choices"][0]["message"]["content"].strip()
+    return ""  # DeepSeek API disabled
 
 
 # ── 离线引擎 (Level 3: 规则 + BM25) ──

@@ -224,3 +224,20 @@ def get_store() -> MemoryStore:
     if _store is None:
         _store = MemoryStore()
     return _store
+
+    def record_reward(self, action: str, reward: float, metadata: Dict = None):
+        """记录奖惩（RL 风格）"""
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "action": action,
+            "reward": reward,
+            "metadata": metadata or {},
+        }
+        self._rewards.append(entry)
+        self._save_rewards()
+
+    def get_avg_reward(self, action: str) -> float:
+        """获取平均奖惩"""
+        rewards = [e["reward"] for e in self._rewards if e["action"] == action]
+        return sum(rewards) / len(rewards) if rewards else 0.0
+

@@ -302,7 +302,44 @@ class CacheManager:
             for k in expired_keys:
                 del self._l1[k]
 
-    def health(self) -> Dict:
+    
+# ── API 调用统计（刷钱防护）────────────────────────────────────
+DEFAULT_API_CALLS = {
+    "total": 0,
+    "by_provider": {},
+    "by_model": {},
+    "cost_estimate_usd": 0.0,
+    "blocked_calls": 0,
+}
+_last_api_call_minute = 0
+
+def api_call_guard(provider: str, model: str, estimated_cost: float = 0.0) -> bool:
+    """刷钱防护：每分钟10次，$10阻断"""
+    global _last_api_call_minute, DEFAULT_API_CALLS
+    now = int(time.time() / 60)
+    if now != _last_api_call_minute:
+        DEFAULT_API_CALLS["by_provider"] = {}
+        _last_api_call_minute = now
+    
+    key = f"{provider}:{model}"
+    if DEFAULT_API_CALLS["by_provider"].get(key, 0) >= 10:
+        DEFAULT_API_CALLS["blocked_calls"] += 1
+        return False
+    
+    DEFAULT_API_CALLS["total"] += 1
+    DEFAULT_API_CALLS["by_provider"][key] = DEFAULT_API_CALLS["by_provider"].get(key, 0) + 1
+    DEFAULT_API_CALLS["cost_estimate_usd"] += estimated_cost
+    
+    if DEFAULT_API_CALLS["cost_estimate_usd"] > 10.0:
+        DEFAULT_API_CALLS["blocked_calls"] += 1
+        return False
+    
+    return True
+
+def get_api_stats() -> dict:
+    return DEFAULT_API_CALLS.copy()
+
+def health(self) -> Dict:
         return {
             "type": "multi_level(L1+L2)",
             "l1_size": len(self._l1),

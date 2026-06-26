@@ -348,6 +348,47 @@ class CoordinatorAgent:
         }
 
     # ---- Health check ----
+
+    def parallel_dispatch(self, user_query: str, agent_output_fn=None, max_parallel=4):
+        """
+        并行调度：同时调度多个Agent，按置信度排序返回。
+        Claude Code 风格：4子Agent并行。
+        """
+        import concurrent.futures
+        import threading
+        
+        # 选 top-N agents (按路由关键词匹配数)
+        agent_scores = {}
+        q = user_query.lower()
+        for agent_id in AGENT_REGISTRY.keys():
+            rules = self.get_rules_for(agent_id)
+            score = sum(1 for r in rules if any(kw in q for kw in r.lower().split()))
+            if score > 0 or agent_id == "code":  # code作为默认
+                agent_scores[agent_id] = score
+        
+        # 排序，取前N
+        sorted_agents = sorted(agent_scores.keys(), key=lambda a: agent_scores[a], reverse=True)[:max_parallel]
+        
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_parallel) as executor:
+            futures = []
+            for agent_id in sorted_agents:
+                future = executor.submit(self.dispatch, user_query)
+                futures.append((agent_id, future))
+            
+            for agent_id, future in futures:
+                try:
+                    result = future.result(timeout=30)
+                    results.append((agent_id, result))
+                except Exception as e:
+                    results.append((agent_id, {"error": str(e)}))
+        
+        return {
+            "parallel_agents": sorted_agents,
+            "results": {a: r for a, r in results},
+            "best_agent": max(sorted_agents, key=lambda a: agent_scores[a]),
+        }
+
     def health(self) -> Dict:
         return {
             "rules_file": str(self.rules_file),

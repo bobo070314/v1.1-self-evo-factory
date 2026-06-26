@@ -153,7 +153,20 @@ class MemoryExtractor:
         except Exception:
             pass
 
-    def _extract_from_text(self, text: str, source: str):
+    
+    # ── 记忆压缩（Claude Code 风格）────────────────────────────────────
+    def _should_store_fragment(self, fragment: MemoryFragment) -> bool:
+        """压缩策略：超过阈值跳过模糊内容，优先 CORRECTIONS/WHO_YOU_ARE"""
+        # 长度检查
+        if len(fragment.text) > 2000:
+            return False
+        # 质量检查：跳过模糊内容
+        fuzzy_words = ["todo", "待优化", "考虑", "可能", "大概"]
+        if any(w in fragment.text.lower() for w in fuzzy_words):
+            return False
+        return True
+
+def _extract_from_text(self, text: str, source: str):
         """应用触发词正则，记忆提取"""
         for pattern, mem_class in EXTRACT_TRIGGERS:
             for match in re.finditer(pattern, text, re.IGNORECASE):
