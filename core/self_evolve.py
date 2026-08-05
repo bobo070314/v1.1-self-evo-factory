@@ -473,10 +473,11 @@ class SelfEvolver:
         self._log = EvolutionLog()
 
     def evolve(self, initial_output: str, user_input: str, agent_type: str = "code",
-               extra_context: Optional[Dict] = None) -> Tuple[str, Dict]:
+               extra_context: Optional[Dict] = None, gate_path: Optional[str] = None) -> Tuple[str, Dict]:
         """
         迭代优化输出。
         返回 (优化后的输出, 迭代记录)
+        gate_path: 可选；演化后对该文件做 SelfHealer 门禁体检，结果附在返回元数据。
         """
         self._log.start_run(user_input, agent_type)
 
@@ -493,10 +494,16 @@ class SelfEvolver:
 
         if score["total"] >= self.MIN_SCORE:
             self._log.end_run(score["total"], True)
-            return current, {
+            meta0 = {
                 "iterations": 1, "final_score": score["total"], "rolled_back": False,
                 "issues": score.get("issues", []),
             }
+            gate0 = self._gate_check(gate_path)
+            if gate0:
+                meta0["gate"] = gate0
+                if not gate0["pass"]:
+                    print(f"  [evolve] ⛔ Gatekeeper 拦截 ({gate_path}): {gate0['errors']} errors")
+            return current, meta0
 
         print(f"  [evolve] 初始分 {score['total']:.1f}/{self.MIN_SCORE}，开始迭代...")
 
@@ -545,15 +552,40 @@ class SelfEvolver:
         final_score = score["total"]
         success = final_score >= self.MIN_SCORE
 
+        # 防御升级：演化产物过 Gatekeeper 门禁
+        gate = self._gate_check(gate_path)
+        if gate:
+            if gate["pass"]:
+                print(f"  [evolve] 🛡️ Gatekeeper 门禁通过 ({gate_path})")
+            else:
+                print(f"  [evolve] ⛔ Gatekeeper 拦截 ({gate_path}): {gate['errors']} errors")
+                success = False  # 演化不过门禁，不算成功
+
         self._log.end_run(final_score, success, rolled_back)
 
-        return current, {
+        meta = {
             "iterations": len(self._log.current_run["generations"]) if self._log.current_run else 1,
             "final_score": final_score,
             "rolled_back": rolled_back,
             "first_score": first_score,
             "issues": score.get("issues", []),
         }
+        if gate:
+            meta["gate"] = gate
+        return current, meta
+
+    def _gate_check(self, gate_path):
+        """演化产物门禁体检（本地 verifier，不调 LLM）。返回 dict 或 None。"""
+        if not gate_path or not Path(gate_path).exists():
+            return None
+        try:
+            geh = SelfHealer()
+            rc, diag = geh.diagnose(Path(gate_path))
+            n_err = diag.get("summary", {}).get("error", 0) if isinstance(diag, dict) else 0
+            return {"rc": rc, "errors": n_err, "pass": (rc == 0 and n_err == 0)}
+        except Exception as e:
+            print(f"  [evolve] Gatekeeper 检查跳过: {e}")
+            return None
 
     def _try_execute_fix(self, fix_prompt: str, user_input: str, agent_type: str) -> Optional[str]:
         """尝试用 cloud/local 执行修复"""
