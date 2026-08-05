@@ -604,7 +604,7 @@ class SelfHealer:
         ".md": "skills/markdown-linter/run.py",
         ".markdown": "skills/markdown-linter/run.py",
         ".css": "skills/css-minifier/run.py",     # 压缩即校验：能健康处理=通过
-        ".py": "core/self_evolve.py",             # 占位：Python 用 py_compile 做语法校验
+        # .py 不映射 verifier，走 _COMPILE_EXTS 的 py_compile 分支
     }
 
     # 简单语言后缀直接 py_compile 校验（无需外部 linter）
