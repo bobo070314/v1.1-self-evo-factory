@@ -4,7 +4,7 @@
 
 [![GitHub repo](https://img.shields.io/badge/repo-bobo070314%2Fv1.1--self--evo--factory-blue)](https://github.com/bobo070314/v1.1-self-evo-factory)
 [![Skills](https://img.shields.io/badge/skills-27_live-green)](https://github.com/bobo070314/v1.1-self-evo-factory/tree/master/skills)
-[![Pipeline](https://img.shields.io/badge/pipeline-self--coder+self--improve-orange)](https://github.com/bobo070314/v1.1-self-evo-factory/tree/master/v1.1-self-evo-factory/pipeline)
+[![Pipeline](https://img.shields.io/badge/pipeline-core%2Fself_evolve-blue)](https://github.com/bobo070314/v1.1-self-evo-factory/tree/master/core)
 [![Ruff](https://img.shields.io/badge/lint-ruff_0.15.18-purple)](https://github.com/astral-sh/ruff)
 [![Pre-commit](https://img.shields.io/badge/hook-pre--commit-lightgrey)](https://pre-commit.com/)
 
@@ -29,18 +29,17 @@
 
 ```
 v1.1-self-evo-factory/
-├── pipeline/
-│   ├── self_coder.py          # 9规则静态分析引擎（0错误/4假阳性）
-│   ├── self_improve.py        # V2.10 @repair 闭环优化器
-│   └── daily_eval_reporter.py # 每日自愈 cron 报告
-├── skills/                    # 152个技能目录
-│   ├── 12核心技能              # create-skill, agent-testing, db-migrations...
-│   ├── 2基础设施               # token-saver, sandbox-executor
-│   ├── 12高频桩                # react, typescript, zustand, i18n...
-│   └── 95stub + 30bare        # 文档技能 + 第三方源码
-├── eval-suite/                # 14个测试文件（100%通过率）
-├── states/                    # 运行时状态快照（闭环历史）
-└── scripts/                   # 批处理/安装脚本
+├── core/
+│   ├── self_evolve.py         # 自我迭代闭环引擎 SelfEvolver（评分→修复→回滚）
+│   ├── rules_orchestrator.py  # 规则引擎编排
+│   └── (30+ 核心模块)          # acceptance/ai_acceptance/memory_store...
+├── skills/                    # 技能目录
+│   └── 152个目录               # 28 个含 run.py，其余为 SKILL.md stub
+├── cn_channels/               # 国内渠道发布（douyin/wechat/xiaohongshu/wecom）
+├── config/                    # 配置文件
+├── scripts/                   # 演示/工具脚本（demo_phoenix, _evo_smoke...）
+├── tests/                     # 测试
+└── web/                       # web 界面（chat.py, index.html）
 ```
 
 ## 🔧 技术栈
@@ -62,10 +61,10 @@ cd v1.1-self-evo-factory
 python .git/hooks/pre-commit.py
 
 # 跑自进化闭环
-python v1.1-self-evo-factory/pipeline/self_coder.py --rules path/to/file.py --json
+python scripts/run_evo_demo.py   # 或见 core/self_evolve.py 的 SelfEvolver 用法
 
 # 全量质量扫描
-python v1.1-self-evo-factory/pipeline/self_improve.py --all
+python scripts/_evo_smoke.py     # 驱动 SelfEvolver.evolve() 的闭环冒烟测试
 
 # 安装 ruff
 pip install ruff
@@ -75,14 +74,15 @@ python -m ruff check skills/ --fix
 ## 🤖 自进化闭环
 
 ```
-scan(self_coder) → optimize(self_improve) → snapshot(json) → evaluate → KEEP or ROLLBACK
+SelfEvolver.evolve()  →  QualityScorer.score()  →  FixEngine 修复  →  重评分  →  KEEP or ROLLBACK
 ```
 
-每次优化都会：
-1. `self_coder --rules <file>` 扫描 9 条关键规则
-2. `self_improve.py` 调用 `@repair` 装饰器自动修复
-3. 状态快照存到 `states/improve_<skill>_<timestamp>.json`
-4. 比较 pre/post-eval 决定保留或回滚
+每次优化都会（见 `core/self_evolve.py`）：
+1. `EvolutionLog.start_run()` 记录运行
+2. `QualityScorer.score()` 多维评分（语法/安全/风格/完整性/逻辑/性能）
+3. `FixEngine` 针对缺陷选择修复策略
+4. 低于阈值时调用 LLM 回调（`cloud_fn`/`llm_chat_fn`）自动修复
+5. 分数下降超过阈值自动回滚，进化历史存 `data/evolution/`
 
 ## 🛡️ 安全审计
 

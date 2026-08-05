@@ -1,5 +1,26 @@
 # MEMORY.md
-## 2026-06-23 终态 — V2.13 全量快照 (148/148 标准化)
+
+## 2026-08-05 — 免费LLM接通 + 技能复活流程 (波波 & 小虾)
+
+### 里程碑：免费"手术刀"接通
+- agnes 免费端点：`https://apihub.agnes-ai.com/v1`（OpenAI兼容），模型 `agnes-2.5-flash`（**不带 agnes/ 前缀**），auth `Bearer $AGNES_API_KEY`（env 已配，51字符）
+- **不要用 `127.0.0.1:18789`**——那是 Control UI 端口，不是 LLM API（踩过坑）
+- `SelfEvolver.__init__` 只接 `llm_chat_fn`/`cloud_fn` 回调，**不接** model_name/api_base/api_key（connect_brain 里设这些参数会 TypeError）
+
+### 复活技能流水线（scripts/_resurrect_v2.py，SET RESURRECT_SKILL=<name> 换目标）
+- 两步：① LLM 生成 SKILL.md 规格 ② 基于规格生成 run.py
+- **三重验证**（防假阳性）：非空>100B + py_compile + `--version` 有输出
+- 已复活 3 个：css-minifier / markdown-linter / yaml-linter（LIVE 28→32）
+- 新技能：skills/llm-query-agnes（成品，已测通）
+
+### 踩过的坑（别再犯）
+- **Authorization 头必须是 `"Bearer " + key`**，曾误写 `"***" + key` 导致 401 无效令牌
+- **LLM 回复带 ```python 围栏**，必须 extract_python 剥离，且确认 main 里真的调用了它（曾定义未调用）
+- **空文件 py_compile 也通过**——验证必须含字节数检查，单靠语法会假阳性
+- 生成代码验证必须：非空 + 语法 + --version 输出，三者全过才算复活
+- `set RESURRECT_SKILL=name` 尾随空格会被 set 吃掉→ 脚本里要 .strip()
+- 裸 LLM 生成无规格 stub 代码 良品率低（曾 0/3），有规格+三重验证后 3/3（含手动修围栏）
+
 
 ### Git 仓库
 - **GitHub**: `git@github.com:bobo070314/v1.1-self-evo-factory.git` (SSH)

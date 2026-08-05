@@ -1,19 +1,11 @@
 ---
 name: markdown-linter
-description: Stub skill: markdown-linter
-version: 0.1.0
+description: Lint markdown files to detect unclosed code blocks, duplicate headings, missing blank lines, and other common formatting issues. Reports line numbers for each error.
+version: 1.0.0
 type: skill
-status: stub
+status: live
 ---
 
-# markdown-linter
+## Usage
 
-Stub skill — implementation pending.
-
-## Description
-Stub skill: markdown-linter
-
-## Status
-- [ ] Implementation
-- [ ] Tests
-- [ ] Documentation
+Run the linter on one or more markdown files:

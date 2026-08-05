@@ -116,12 +116,21 @@ class QualityScorer:
             score -= 10
         return max(0, score)
 
+    # SQL 注入检测正则：字符串拼接 SELECT/INSERT/UPDATE/DELETE + 变量
+    _SQLI_PATTERNS = [
+        r"(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b[^'\"`]*\b(AND|OR|WHERE)\b[^'\"`]*\"\s*\+",
+        r"f['\"][^'\"]*(SELECT|INSERT|UPDATE|DELETE)[^'\"]*\{[^'\"]*\}['\"]",
+        r"(query|sql|cmd)\s*=\s*['\"][^'\"]*(SELECT|INSERT|UPDATE|DELETE)[^'\"]*['\"]\s*\+",
+    ]
+
     @staticmethod
     def _score_security(output: str) -> float:
         """安全检测"""
         score = 100.0
         dangerous = [
             (r"rm\s+-rf\s+/\s+", -50),
+            (r"('|\")?\s*(SELECT\s+[^;\n\"']*FROM\s+[\w.]+)[^\n]*\+\s*[A-Za-z_][\w.]*", -35),  # SQL 字符串拼接注入
+            (r"f['\"][^'\"]*(SELECT|INSERT|UPDATE|DELETE)[^'\"]*\{[^'\"]*\}['\"]", -35),  # f-string SQL 注入
             (r"os\.system\([^)]*input", -40),
             (r"subprocess\(.*shell=True", -35),
             (r"exec\([^)]*\)", -30),
@@ -268,6 +277,10 @@ class QualityScorer:
             issues.append({"type": "security", "severity": "high", "msg": "使用 innerHTML, 有 XSS 风险"})
         if re.search(r"rm\s+-rf", output):
             issues.append({"type": "security", "severity": "critical", "msg": "使用 rm -rf, 危险操作"})
+        if re.search(r"('|\")?\s*(SELECT\s+[^;\n\"']*FROM\s+[\w.]+)[^\n]*\+\s*[A-Za-z_][\w.]*", output, re.IGNORECASE):
+            issues.append({"type": "security", "severity": "critical", "msg": "SQL 查询使用字符串拼接，存在 SQL 注入风险"})
+        if re.search(r"f['\"][^'\"]*(SELECT|INSERT|UPDATE|DELETE)[^'\"]*\{[^'\"]*\}['\"]", output, re.IGNORECASE):
+            issues.append({"type": "security", "severity": "high", "msg": "f-string 内嵌 SQL 变量，存在注入风险"})
         # 风格
         if "var " in output:
             issues.append({"type": "style", "severity": "low", "msg": "使用 var, 建议用 const/let"})

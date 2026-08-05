@@ -1,0 +1,7 @@
+{
+  "name": "llm-query-agnes",
+  "version": "0.2.0",
+  "description": "Free LLM query via agnes-2.5-flash (zero cost, OpenAI-compatible)",
+  "entry": "run.py",
+  "interfaces": ["--prompt", "--json", "--version", "--dry-run"]
+}
