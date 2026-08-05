@@ -3,9 +3,20 @@
 ## 2026-08-05 收官 — 免疫系统正式上线（波波 & 小虾）
 
 ### 出厂状态（Agnes v1.1 基础设施）
-- 32 live 技能全绿；88 json + 32 py 全绿
+- 32 live 技能全绿；88 json + 32 py 全绿（scan_health.py EXIT 0）
 - Gatekeeper pre-commit 门禁强制启用
-- Git 今日 6-7 连 commit 全部推送（ed6c94e → ... → 084802f）
+- Git 今日 8 连 commit 全部推送（ed6c94e → … → 5adffbf，working tree CLEAN）
+
+### 收官 commit 5adffbf — Gatekeeper「分寸感」修复（波波点名表扬）
+- 背景：Gatekeeper 把 warning 级别当 error 拦截，在实战中拦截了创造者自己的提交
+- 修复：**0/1/2 语义区分**——0=healthy、1=已自愈(rc 报 1 让 hook 提示重 add)、2=warning/error(真正拦截)
+- 原则：不改法律跳过（--no-verify），而是修改法律本身；免疫系统精准识别而非盲目排异
+- 文档：`docs/ Agnes Constitution manual` 同 commit 落袋
+
+### 收官体检铁律（今天被绊一下，立为规范）
+- 体检命令必须带编码，否则 Windows GBK 终端在 ⚠️/✅ emoji 处炸 UnicodeEncodeError（看起来红，实际全绿）
+- **正确姿势**：`$env:PYTHONIOENCODING='utf-8'; python scripts/scan_health.py`
+- MEMORY.md 早有此条，但执行时没落到每次体检 → 已固化为 check 清单第一步
 
 ### 开发者三大铁律（血泪史沉淀）
 1. **PowerShell 路径坑**：`cd /d 路径` 是 CMD 语法，PowerShell 会失败/不切目录。
@@ -234,3 +245,15 @@
 - ❌ 问题: subconscious-daemon cron job 每60s spawn AI agent → ~18K tokens/run, 18次=~800K tokens wasted
 - ✅ 修复: 删除 cron job, 改用 HEARTBEAT.md 复用主session心跳
 - ✅ 新增: HEARTBEAT.md + heartbeat-state.json 标准化检查清单
+
+## 模型分级策略与 Temperature 备忘（2026-08-05 波波建议采纳）
+- **分级诊疗原则**：初步体检/简单修复（YAML缩进、CSS压缩）→ 用便宜模型（agnes-2.5-flash）；Gatekeeper 拦截触发回滚的疑难杂症（如 unclosed-code-block）→ 升级深度手术模型（deepseek-reasoner / 更强模型），人工介入候选
+- **当前实际模型栈**：agnes-2.5-flash（默认免费，复活主力，temperature=0.2 已固化在 agnes_client.py）｜deepseek-reasoner（主会话）｜nvidia nemotron（微信 pin）｜fallback: zhipu glm / google gemini / groq
+- **注意**：栈里没有 OpenClaude / Nous Hermes 2（ioenclaw 系 OpenClaw 乱码变体），如未来经 OneAPI/OpenRouter 接入新模型，先测 temperature：代码修复/JSON 输出压到 0-0.2，创意类 0.5-0.7
+- **铁律**：任何 cron 让 LLM 从原始输出解析数字 → 必须先有机器判词层（GPU_OK/GPU_ALERT），LLM 只做路由不做解析
+
+## 复利闭环首演：link-checker 复活（2026-08-05 22:52）
+- **流水线**：Resurrect(手写run.py 6.2KB) → Gatekeeper(88/88 全绿 + 33 py 语法健康) → Verify(0 token vs LLM 5-9k/4链接; dry-run 239ms) → Memory(本条)
+- **聪明点**：HEAD 优先+405/501 自动降级 GET；重试退避(0.8s 起)；URL 尾部标点剥离(`,);.:!?`)+去重保序；退出码 0/1/2 语义化——全是"机器判词"哲学的延伸
+- **愚蠢点**：live 检查 30.8s 中有 ~24s 浪费在 httpbin 限流的超时重试上——**没有总预算/并发控制**，单个慢站点会拖垮整批检查。V2 方向：--max-time 总预算 + ThreadPoolExecutor 并发 + 失败分级缓存
+- **教训**：复活 stub 时先读已复活邻居(css-minifier)的 run.py 规范，再写——比从零发明格式省 2 轮自愈
