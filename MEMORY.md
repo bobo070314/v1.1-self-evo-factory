@@ -1,5 +1,31 @@
 # MEMORY.md
 
+## 2026-08-05 收官 — 免疫系统正式上线（波波 & 小虾）
+
+### 出厂状态（Agnes v1.1 基础设施）
+- 32 live 技能全绿；88 json + 32 py 全绿
+- Gatekeeper pre-commit 门禁强制启用
+- Git 今日 6-7 连 commit 全部推送（ed6c94e → ... → 084802f）
+
+### 开发者三大铁律（血泪史沉淀）
+1. **PowerShell 路径坑**：`cd /d 路径` 是 CMD 语法，PowerShell 会失败/不切目录。
+   PowerShell 用 `Set-Location -Path '绝对路径'` 或 `cmd /c "cd /d 路径 && git ..."`。
+   git add 前必看 `git status --short` 确认 cwd，防止 `git add -A` 污染整个 workspace（踩过！）。
+2. **注入安全（return 路径覆盖）**：往已有函数插横切逻辑时，必须读完该函数**所有 return 路径**。
+   evolve() 有"初始分≥65 提前 return"，门禁放末尾永远不会执行——要抽 `_gate_check()` 辅助方法，
+   在每处 return 前调用。见 core/self_evolve.py。
+3. **LLM 幻觉模式**：agnès 修 `unclosed-code-block`（代码块未闭合）时易修不好/猜闭合位置。
+   协议要求：能修则修，修不动触发**回滚保护**（不留下损坏文件），并报 blocked。
+   证据驱动：先 linter --json 拿"化验单"再喂 LLM，杜绝"盲目生成"。
+
+### 免疫系统组件速查
+- `gatekeeper.py`：pre-commit 门禁（diff --cached → 体检 → 放行/自愈/拦截）
+- `install_hooks.py`：安装/卸载 hook（幂等，备份 .bak）
+- `SelfHealer`（core/self_evolve.py）：VERIFIERS 映射 + Scan→Diagnose→Fix→Verify
+- `scan_health.py` / `scan_py_health.py`：全库只读体检（零 LLM）
+- `self_evolve.py --path/--tree/--no-llm`：CLI 自愈入口
+
+
 ## 2026-08-05 — 免费LLM接通 + 技能复活流程 (波波 & 小虾)
 
 ### 里程碑：免费"手术刀"接通

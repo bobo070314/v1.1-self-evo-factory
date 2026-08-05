@@ -64,10 +64,11 @@ def main():
         rc, data = diag
         n_err = data.get("summary", {}).get("error", 0) if isinstance(data, dict) else 0
         n_warn = data.get("summary", {}).get("warning", 0) if isinstance(data, dict) else 0
-        if rc == 0 and n_err == 0:
-            report["healthy"].append(rel)
+        # 健康：无 error。仅警告(warnings/info, rc=2)不阻塞提交——0/1/2 语义里只有 error 才拦截。
+        if n_err == 0 and rc in (0, 2):
+            report["healthy"].append(rel + (f" ({n_warn} 警告)" if n_warn else ""))
             continue
-        # has issues -> try self-heal
+        # has hard error -> try self-heal
         try:
             res = healer.heal(path, verbose=False)
         except Exception as e:
