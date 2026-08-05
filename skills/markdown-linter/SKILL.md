@@ -1,7 +1,7 @@
 ---
 name: markdown-linter
-description: Lint markdown files to detect unclosed code blocks, duplicate headings, missing blank lines, and other common formatting issues. Reports line numbers for each error.
-version: 1.0.0
+description: "Industrial-grade markdown linter: unclosed code blocks, duplicate headings, blank-line rules, trailing whitespace. Exit-code 0/1/2, machine-readable JSON with severity summary."
+version: 1.0.1
 type: skill
 status: live
 ---

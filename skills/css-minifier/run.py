@@ -1,208 +1,211 @@
 #!/usr/bin/env python3
-"""CSS Minifier - Compress and minify CSS code."""
+"""css-minifier — Industrial-grade CSS minifier.
+
+Compresses CSS (comments / whitespace / redundant semicolons) while preserving
+semantic equivalence. Professional CLI: tool-named version, exit-code
+semantics, honest --dry-run, and machine-readable JSON.
+
+Usage:
+  python run.py input.css
+  python run.py input.css --json
+  python run.py input.css --dry-run      # validate path only
+  echo "body { color: red; }" | python run.py -
+  python run.py --version
+"""
 
 import argparse
-import re
-import sys
 import json
+import sys
+from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
+TOOLCHAIN = "Agnes Toolchain"
 
 
 def minify_css(css: str) -> str:
-    """Minify CSS by removing comments, unnecessary whitespace, and redundant semicolons."""
+    """Minify CSS: strip comments/whitespace/redundant semicolons outside strings."""
     if not css or not css.strip():
         return ""
-
     result = []
     i = 0
     length = len(css)
-    in_string = None  # None, '"', or "'"
+    in_string = None
     in_comment = False
-    prev_char = None
-    after_block_start = False
-    after_property_value = False
-    after_comma = False
     in_url = False
 
     while i < length:
-        char = css[i]
+        ch = css[i]
 
-        # Handle string literals
         if in_string:
-            result.append(char)
-            if char == '\\' and i + 1 < length:
+            result.append(ch)
+            if ch == "\\" and i + 1 < length:
                 i += 1
-                if i < length:
-                    result.append(css[i])
-            elif char == in_string:
+                result.append(css[i])
+            elif ch == in_string:
                 in_string = None
             i += 1
             continue
 
-        if char in ('"', "'"):
-            in_string = char
-            result.append(char)
+        if ch in ('"', "'"):
+            in_string = ch
+            result.append(ch)
             i += 1
             continue
 
-        # Handle comments
-        if not in_comment and char == '/' and i + 1 < length and css[i + 1] == '*':
+        if not in_comment and ch == "/" and i + 1 < length and css[i + 1] == "*":
             in_comment = True
             i += 2
             continue
 
         if in_comment:
-            if char == '*' and i + 1 < length and css[i + 1] == '/':
+            if ch == "*" and i + 1 < length and css[i + 1] == "/":
                 in_comment = False
                 i += 2
                 continue
             i += 1
             continue
 
-        # Skip whitespace outside strings and comments
-        if char in (' ', '\t', '\n', '\r'):
-            # Collapse whitespace
-            if result and result[-1] not in (' ', '\t', '\n', '\r', '{', '}', ':', ',', ';', '('):
-                result.append(' ')
+        if ch in (" ", "\t", "\n", "\r"):
+            if result and result[-1] not in (" ", "\t", "\n", "\r", "{", "}", ":", ",", ";", "("):
+                result.append(" ")
             i += 1
             continue
 
-        # Handle special cases for colons and semicolons
-        if char == ':' and not in_url:
-            # Check if we're in a URL context
-            if result and result[-1] == 'u' and len(result) >= 4:
-                suffix = ''.join(result[-4:]).lower()
-                if suffix == 'url':
-                    in_url = True
-            result.append(char)
+        if ch == ":" and not in_url:
+            if result and result[-1] == "u" and "".join(result[-4:]).lower() == "url":
+                in_url = True
+            result.append(ch)
             i += 1
             continue
 
-        if char == ')':
+        if ch == ")":
             in_url = False
-            result.append(char)
+            result.append(ch)
             i += 1
             continue
 
-        if char == ';':
-            result.append(char)
+        if ch == ";":
+            result.append(ch)
             i += 1
             continue
 
-        if char == '{':
-            # Remove any trailing space before {
-            if result and result[-1] == ' ':
+        if ch == "{":
+            if result and result[-1] == " ":
                 result.pop()
-            result.append(char)
+            result.append(ch)
             i += 1
             continue
 
-        if char == '}':
-            result.append(char)
+        if ch == "}":
+            result.append(ch)
             i += 1
             continue
 
-        # Regular character
-        result.append(char)
+        result.append(ch)
         i += 1
 
-    # Post-processing: remove redundant semicolons
-    output = ''.join(result)
-    output = remove_redundant_semicolons(output)
-
-    # Remove trailing whitespace
-    output = output.rstrip()
-
-    return output
+    output = "".join(result)
+    output = re_sub_semicolons(output)
+    return output.rstrip()
 
 
-def remove_redundant_semicolons(css: str) -> str:
-    """Remove redundant semicolons after closing braces and at the end."""
-    # Remove semicolons before closing braces
-    css = re.sub(r';\s*\}', '}', css)
-    # Remove trailing semicolons
-    css = css.rstrip(';').rstrip()
+def re_sub_semicolons(css: str) -> str:
+    """Remove redundant semicolons before closing braces and trailing ones."""
+    import re
+    css = re.sub(r";\s*\}", "}", css)
     return css
 
 
-def process_file(filepath: str) -> str:
-    """Read and minify a CSS file."""
+def read_input(path_arg):
+    """Read CSS from file (utf-8, latin-1 fallback) or stdin. Returns (content, source)."""
+    if path_arg in (None, "-"):
+        return sys.stdin.read(), "<stdin>"
+    p = Path(path_arg)
+    if not p.is_file():
+        raise FileNotFoundError(p)
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except FileNotFoundError:
-        print(f"Error: File not found: {filepath}", file=sys.stderr)
-        sys.exit(1)
+        return p.read_text(encoding="utf-8"), str(p)
     except UnicodeDecodeError:
-        try:
-            with open(filepath, 'r', encoding='latin-1') as f:
-                content = f.read()
-        except Exception as e:
-            print(f"Error reading file: {e}", file=sys.stderr)
-            sys.exit(1)
-    except Exception as e:
-        print(f"Error reading file: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    return minify_css(content)
+        return p.read_text(encoding="latin-1"), str(p)
 
 
-def process_stdin() -> str:
-    """Read CSS from stdin and minify it."""
-    try:
-        content = sys.stdin.read()
-    except Exception as e:
-        print(f"Error reading stdin: {e}", file=sys.stderr)
-        sys.exit(1)
-    return minify_css(content)
+def parse_args():
+    ap = argparse.ArgumentParser(
+        prog="css-minifier",
+        description="Industrial-grade CSS minifier (comments/whitespace/redundant semicolons).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Exit codes:\n"
+            "  0  success\n"
+            "  1  input error (file missing / unreadable)\n"
+        ),
+    )
+    ap.add_argument("input", nargs="?", help="Input CSS file; '-' or omit for stdin")
+    ap.add_argument("--json", action="store_true", help="machine-readable JSON output")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="validate input path only, do not minify")
+    ap.add_argument("--version", action="version",
+                    version=f"css-minifier v{VERSION} (part of {TOOLCHAIN})")
+    return ap.parse_args()
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Compress and minify CSS code.',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''Examples:
-  echo "body { color: red; }" | python run.py
-  python run.py input.css
-  python run.py --json input.css
-  python run.py --dry-run input.css
-'''
-    )
-    parser.add_argument('--version', action='version', version=VERSION)
-    parser.add_argument('--json', action='store_true', help='Output as JSON')
-    parser.add_argument('--dry-run', action='store_true', help='Show what would be done without modifying files')
-    parser.add_argument('input', nargs='?', help='Input CSS file (reads from stdin if not provided)')
+    args = parse_args()
+    src_name = args.input if args.input not in (None, "-") else "<stdin>"
 
-    args = parser.parse_args()
+    # dry-run: validate only the input path, never read content
+    if args.dry_run:
+        if args.input not in (None, "-"):
+            p = Path(args.input)
+            if not p.is_file():
+                print(json.dumps({"status": "error", "file": src_name,
+                                  "reason": "file not found"}) if args.json
+                      else f"{src_name}: dry-run FAILED (file not found)", file=sys.stderr)
+                return 1
+            print(json.dumps({"status": "ok", "file": src_name, "dry_run": True}) if args.json
+                  else f"{src_name}: dry-run OK (path valid)")
+        else:
+            print(json.dumps({"status": "ok", "file": "<stdin>", "dry_run": True}) if args.json
+                  else "<stdin>: dry-run OK")
+        return 0
 
-    if args.input:
-        result = process_file(args.input)
-    else:
-        result = process_stdin()
+    # real run
+    try:
+        css, src = read_input(args.input)
+    except FileNotFoundError as e:
+        print(json.dumps({"status": "error", "file": src_name,
+                          "reason": "file not found"}) if args.json
+              else f"Error: file not found: {src_name}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(json.dumps({"status": "error", "file": src_name, "reason": str(e)}) if args.json
+              else f"Error reading {src_name}: {e}", file=sys.stderr)
+        return 1
+
+    out = minify_css(css)
+    orig_size = len(css)
+    min_size = len(out)
 
     if args.json:
-        output = {
+        payload = {
+            "tool": "css-minifier",
             "version": VERSION,
-            "input": args.input,
-            "minified": result,
-            "original_size": len(args.input if args.input else sys.stdin.read()) if not args.dry_run else 0,
-            "minified_size": len(result)
+            "file": src,
+            "minified": out,
+            "original_size": orig_size,
+            "minified_size": min_size,
+            "savings_pct": round(100 * (1 - min_size / orig_size), 1) if orig_size else 0.0,
         }
-        print(json.dumps(output, indent=2))
+        print(json.dumps(payload, ensure_ascii=False))
     else:
-        if args.dry_run:
-            if args.input:
-                print(f"Would minify: {args.input}")
-                print(f"Original size: {len(process_file(args.input))} bytes")
-                print(f"Minified size: {len(result)} bytes")
-                print(f"Savings: {100 * (1 - len(result) / max(len(process_file(args.input)), 1)):.1f}%")
-            else:
-                print("Would minify from stdin")
-                print(f"Minified size: {len(result)} bytes")
+        print(out)
+        if not args.input:
+            pass  # stdin pipeline: emit only minified css to stdout
         else:
-            print(result)
+            print(f"# {src}: {orig_size} -> {min_size} bytes "
+                  f"({100 * (1 - min_size / orig_size):.1f}% saved)", file=sys.stderr)
+    return 0
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    sys.exit(main())

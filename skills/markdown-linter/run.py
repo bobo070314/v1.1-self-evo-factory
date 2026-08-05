@@ -7,11 +7,12 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
+TOOLCHAIN = "Agnes Toolchain"
 
 
-def read_file(path: Path) -> str | None:
-    """Read file with graceful encoding error handling."""
+def read_file(path: Path):
+    """Read file with graceful encoding error handling. Returns str or None."""
     for encoding in ("utf-8", "utf-8-sig", "latin-1"):
         try:
             return path.read_text(encoding=encoding)
@@ -215,7 +216,7 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {VERSION}",
+        version=f"markdown-linter v{VERSION} (part of {TOOLCHAIN})",
         help="Show program version and exit"
     )
     parser.add_argument(
@@ -269,14 +270,25 @@ def main():
 
     # Output results
     if args.json_output:
-        print(format_json(issues))
+        n_err = sum(1 for i in issues if i["severity"] == "error")
+        n_warn = sum(1 for i in issues if i["severity"] in ("warning", "info"))
+        payload = {
+            "tool": "markdown-linter",
+            "version": VERSION,
+            "summary": {"error": n_err, "warning": n_warn},
+            "issues": issues,
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
     else:
         if issues or not args.quiet:
             print(format_text(issues))
 
-    # Exit code: 0 for no errors, 1 for errors found
-    has_errors = any(i["severity"] == "error" for i in issues)
-    sys.exit(1 if has_errors else 0)
+    # Exit-code semantics: 0 no errors / 1 errors / 2 warnings only
+    n_err = sum(1 for i in issues if i["severity"] == "error")
+    n_warn = sum(1 for i in issues if i["severity"] in ("warning", "info"))
+    if n_err > 0:
+        sys.exit(1)
+    sys.exit(2 if n_warn > 0 else 0)
 
 
 if __name__ == "__main__":
