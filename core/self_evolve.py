@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """
-core/self_evolve.py — 自我迭代闭环 (v1.0)
-==========================================
-不再是"一次生成就交货"，而是"生成→审计→评分→修复→重执行→通过为止"。
+core/self_evolve.py — 自我迭代闭环引擎 (v2.0)
+===========================================
+双引擎：
+- SelfEvolver: 评分→修复→重执行→回滚（生成物质量把关）
+- SelfHealer:  泛化自愈协议 Scan→Diagnose→Fix(LLM)→Verify
+  （只要有 verifier/linter，就能自动修——本质：证据驱动的手术）
+
+CLI:
+  python core/self_evolve.py --path <file>            # 体检+自愈
+  python core/self_evolve.py --path <file> --no-llm   # 只体检
+  python core/self_evolve.py --tree <dir> --ext yaml  # 批量自愈
 
 设计思想：
 - 评分系统：0-100 分，多层维度（语法、风格、安全、逻辑、完整性）
@@ -21,6 +29,7 @@ import sys
 import time
 import copy
 import traceback
+import subprocess
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple, Any
@@ -574,3 +583,193 @@ class SelfEvolver:
             "stats": self._log.get_stats(),
             "llm_available": self._llm_chat is not None or self._cloud is not None,
         }
+
+
+# ── 通用修复协议 SelfHealer ─────────────────────────────────
+# 泛化“诊断→修复→验证”闭环：只要有 verifier (linter)，就能自愈。
+# 证据驱动：先跑 verifier --json 拿到结构化报错，再把“证据+源码”喂给 LLM。
+
+class SelfHealer:
+    """Platform-grade self-healing: Scan → Diagnose → Fix(LLM) → Verify.
+
+    按文件后缀映射到对应 verifier；体格检查不合格时自动启动自愈。
+    这是把 demo (test_self_healing.py) 提炼为平台能力的内核。
+    """
+
+    # 后缀 → verifier 可执行脚本（相对项目根）
+    VERIFIERS = {
+        ".yaml": "skills/yaml-linter/run.py",
+        ".yml": "skills/yaml-linter/run.py",
+        ".json": "skills/yaml-linter/run.py",   # JSON 是 YAML 子集，可被 pyyaml 校验
+        ".md": "skills/markdown-linter/run.py",
+        ".markdown": "skills/markdown-linter/run.py",
+        ".css": "skills/css-minifier/run.py",     # 压缩即校验：能健康处理=通过
+        ".py": "core/self_evolve.py",             # 占位：Python 用 py_compile 做语法校验
+    }
+
+    # 简单语言后缀直接 py_compile 校验（无需外部 linter）
+    _COMPILE_EXTS = {".py"}
+
+    def __init__(self, llm_fn=None, project_root=None):
+        self.project_root = Path(project_root or BASE)
+        self._llm_fn = llm_fn  # 可选注入；默认懒加载 agnes
+
+    # ── verifier 解析 ────────────────────────────────────────
+    def verifier_for(self, path: Path) -> Optional[Path]:
+        suffix = path.suffix.lower()
+        rel = self.VERIFIERS.get(suffix)
+        if rel:
+            p = self.project_root / rel
+            return p if p.exists() else None
+        return None
+
+    # ── 诊断 ─────────────────────────────────────────────────
+    def diagnose(self, path: Path):
+        """运行对应 verifier --json。返回 (rc, data)。无 verifier 时尝试 py_compile。"""
+        verifier = self.verifier_for(path)
+        if verifier is None:
+            if path.suffix.lower() in self._COMPILE_EXTS:
+                return self._py_compile_check(path)
+            return None, {"summary": {"error": 0}, "unverifiable": True}
+
+        r = subprocess.run([sys.executable, str(verifier), str(path), "--json"],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        try:
+            data = json.loads(r.stdout) if r.stdout else {}
+        except json.JSONDecodeError:
+            data = {"summary": {"error": 0}, "raw": r.stdout}
+        return r.returncode, data
+
+    @staticmethod
+    def _py_compile_check(path: Path):
+        r = subprocess.run([sys.executable, "-m", "py_compile", str(path)],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        ok = r.returncode == 0
+        return (0 if ok else 1), {"summary": {"error": 0 if ok else 1},
+                                   "diagnostic": None if ok else r.stderr[:300]}
+
+    # ── 修复 ─────────────────────────────────────────────────
+    def _llm(self, prompt: str) -> str:
+        if self._llm_fn:
+            return self._llm_fn(prompt)
+        # 懒加载 agnes 客户端（确保项目根在 sys.path）
+        root = str(self.project_root)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from scripts.agnes_client import call_llm
+        return call_llm(prompt)
+
+    @staticmethod
+    def _build_fix_prompt(original: str, evidence) -> str:
+        return (
+            "你是通用配置文件修复专家。下面的文件被 verifier 报了错，请修复并返回完整内容。\n"
+            "要求：保持语义和结构，只修掉错误；只输出修复后的文件内容，不加解释、不用代码块。\n\n"
+            "===== 原内容 =====\n"
+            f"{original}\n"
+            "===== 诊断证据 (结构化) =====\n"
+            f"{json.dumps(evidence, ensure_ascii=False)}"
+        )
+
+    # ── 主闭环 ───────────────────────────────────────────────
+    def heal(self, path, verbose=True):
+        """完整自愈闭环。返回 dict {success, action, evidence, fixed_content}。"""
+        p = Path(path)
+        if not p.exists():
+            return {"success": False, "action": "skipped", "reason": "file missing"}
+
+        original = p.read_text(encoding="utf-8", errors="replace")
+        rc, diag = self.diagnose(p)
+        n_err = diag.get("summary", {}).get("error", 0)
+        if diag.get("unverifiable"):
+            if verbose:
+                print(f"[heal] {p.name}: 无 verifier，跳过")
+            return {"success": True, "action": "unverifiable"}
+        if rc == 0 and n_err == 0:
+            if verbose:
+                print(f"[heal] {p.name}: ✅ 体检合格，无需修复")
+            return {"success": True, "action": "healthy"}
+
+        if verbose:
+            print(f"[heal] {p.name}: ❌ rc={rc}, errors={n_err}")
+            for d in (diag.get("files", [{}])[0].get("diagnostics", []) if diag.get("files") else [] )[:5]:
+                print(f"        [L{d.get('line')},C{d.get('column')}] {d.get('reason','')}")
+
+        # 求助 LLM 修复
+        try:
+            fixed = self._llm(self._build_fix_prompt(original, diag))
+        except Exception as e:
+            print(f"        ❌ LLM 调用失败: {e}")
+            return {"success": False, "action": "llm_error", "reason": str(e)}
+        if not fixed or len(fixed) < 5:
+            print("        ❌ LLM 返回异常")
+            return {"success": False, "action": "llm_empty"}
+
+        # 写回 + 二次验证
+        p.write_text(fixed.rstrip("\n") + "\n", encoding="utf-8")
+        rc2, diag2 = self.diagnose(p)
+        n_err2 = diag2.get("summary", {}).get("error", 0)
+        if rc2 == 0 and n_err2 == 0:
+            if verbose:
+                print(f"[heal] {p.name}: ✅ 修复后体检通过 — 进化成功")
+            return {"success": True, "action": "healed", "fixed_content": fixed}
+        else:
+            p.write_text(original, encoding="utf-8")  # 回滚
+            if verbose:
+                print(f"[heal] {p.name}: ❌ 二次体检仍失败 (rc={rc2}, err={n_err2})，已回滚")
+            return {"success": False, "action": "heal_failed"}
+
+    def heal_tree(self, root, suffixes=None, verbose=True):
+        """批量自愈一个目录树下所有可验证文件。"""
+        root = Path(root)
+        targets = []
+        for ext in (suffixes or list(self.VERIFIERS.keys())):
+            targets.extend(root.rglob("*" + ext))
+        results = {"healed": [], "healthy": [], "failed": [], "skipped": []}
+        for t in targets:
+            r = self.heal(t, verbose=verbose)
+            results[r.get("action", "skipped")].append(str(t))
+        return results
+
+
+# ── CLI ─────────────────────────────────────────────────────
+
+def _main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(
+        prog="self_evolve",
+        description="Self-evolving engine: grade (SelfEvolver) + self-heal (SelfHealer).",
+    )
+    ap.add_argument("--path", help="体检/自愈单个文件路径", required=False)
+    ap.add_argument("--tree", help="批量自愈一个目录", required=False)
+    ap.add_argument("--ext", help="批量时限定后缀(逗号分隔)", default=None)
+    ap.add_argument("--no-llm", action="store_true", help="只体检不自愈(不调 LLM)")
+    ap.add_argument("--version", action="version", version="self_evolve 2.0.0")
+    args = ap.parse_args(argv)
+
+    healer = SelfHealer()
+
+    if args.path:
+        if args.no_llm:
+            p = Path(args.path)
+            rc, diag = healer.diagnose(p)
+            n_err = diag.get("summary", {}).get("error", 0) if diag else 0
+            print(f"{p.name}: rc={rc}, errors={n_err}")
+            return 1 if n_err else 0
+        r = healer.heal(args.path)
+        return 0 if r.get("success") else 1
+
+    if args.tree:
+        exts = None
+        if args.ext:
+            exts = [e.strip() for e in args.ext.split(",") if e.strip()]
+        results = healer.heal_tree(args.tree, suffixes=exts)
+        print(json.dumps({k: len(v) for k, v in results.items()}, indent=2))
+        return 1 if results.get("failed") else 0
+
+    ap.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_main())
+

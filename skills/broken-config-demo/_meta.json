@@ -1,6 +1,6 @@
-
-
 {
   "name": "broken-config-demo",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "description": "Demo fixture for the self-healing loop",
+  "status": "demo"
 }
